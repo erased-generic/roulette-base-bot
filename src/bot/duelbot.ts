@@ -182,7 +182,7 @@ abstract class DuelBot<T extends Game> extends BotBase {
       }
     }
     this.duels[userId1] = rendezvous;
-    return `${username2}, reply with !accept [${username}] to accept the ${this.duelDescription}, if you're ready to bet ${amount} points!`;
+    return `${username2}, reply with ${this.botContext.cmdMarker}accept [${username}] to accept the ${this.duelDescription}, if you're ready to bet ${amount} points!`;
   }
 
   private unrendezvous(duel: DuelRendezvous) {
