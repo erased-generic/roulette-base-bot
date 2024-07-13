@@ -60,6 +60,7 @@ function callHandler(bot: Bot, handler: BotHandler, context: ChatContext, args: 
 }
 
 function composeBots(bots: Bot[]): Bot {
+  const ctx = bots[0].getContext();
   let bot: Bot = {
     handlers: {
       ...bots.reduce((acc, bot) => ({ ...acc, ...bot.handlers }), {}),
@@ -68,12 +69,12 @@ function composeBots(bots: Bot[]): Bot {
           if (args.length > 1) {
             const key = args[1];
             if (key in bot.handlers) {
-              return `!${key}: ${bot.handlers[key].description}. Format: !${key} ${bot.handlers[key].format}`;
+              return `${ctx.cmdMarker}${key}: ${bot.handlers[key].description}. Format: ${ctx.cmdMarker}${key} ${bot.handlers[key].format}`;
             } else {
-              return `!${key} is not a valid command.`
+              return `${ctx.cmdMarker}${key} is not a valid command.`
             }
           }
-          return `Available commands: ${Object.keys(bot.handlers).map(x => `!${x}`).join(", ")}`;
+          return `Available commands: ${Object.keys(bot.handlers).map(x => `${ctx.cmdMarker}${x}`).join(", ")}`;
         },
         description: "List available commands or describe a command",
         format: "[<command name>]"
