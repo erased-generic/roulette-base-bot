@@ -75,18 +75,13 @@ class BlackJackDuelBot
   protected override printDuelIntro(
     duel: DuelAccepted<blackjackModule.BlackJack>
   ): string {
-    return (
-      "If twitch blocks you from sending identical messages, " +
-      "you can put random garbage at the end of the message."
-    );
+    return "";
   }
 
   protected override printDuelStatus(
     duel: DuelAccepted<blackjackModule.BlackJack>,
     moreInfo: boolean
   ): string {
-    // `If twitch blocks you from sending identical messages, ` +
-    // `you can put random garbage at the end of the message. `
     if (!moreInfo) {
       return "";
     }
