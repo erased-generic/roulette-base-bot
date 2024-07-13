@@ -5,7 +5,8 @@
     "target": "es2017",
     "moduleResolution": "node",
     "sourceMap": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    "composite": true
   },
   "lib": ["ES2017,DOM"],
   "include": ["src/**/*.ts", "test/**/*.ts"]

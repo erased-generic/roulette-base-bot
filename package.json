@@ -1,12 +1,10 @@
 {
-  "name": "roulette-twitch-bot",
+  "name": "roulette-base-bot",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/src/bot.js",
   "scripts": {
     "build": "tsc",
-    "start": "npm run build && node dist/src/bot.js",
-    "test": "npm run build && node dist/test/test.js"
+    "test": "npm run build && node dist/test/base_test.js"
   },
   "author": "",
   "license": "ISC",
