@@ -10,6 +10,7 @@ import {
 } from "../../src/util/interfaces";
 import {
   BlackJack,
+  BlackJackBrain,
   Card,
   CardSuit,
   Deck,
@@ -259,7 +260,7 @@ testHandler(aChatContext, "!unduel", /a forfeits the test duel/);
 myDeck.cards = new Deck().cards;
 instance = createTestBot(
   [
-    (u) => new BlackJackDuelBot(u, 0, () => myDeck), // use this deck interface and don't shuffle players
+    (u) => new BlackJackDuelBot(u, 0, () => myDeck, new BlackJackBrain(0)), // use this deck interface and don't shuffle players
   ],
   botContext
 );
@@ -483,14 +484,19 @@ let isFirst = true;
 instance = createTestBot(
   [
     (u) =>
-      new BlackJackDuelBot(botContext, 1, () => {
-        if (isFirst) {
-          isFirst = false;
-          return myDeck;
-        } else {
-          return myDeck2;
-        }
-      }), // use different decks for the two duels, also swap players
+      new BlackJackDuelBot(
+        botContext,
+        1,
+        () => {
+          if (isFirst) {
+            isFirst = false;
+            return myDeck;
+          } else {
+            return myDeck2;
+          }
+        },
+        new BlackJackBrain(0)
+      ), // use different decks for the two duels, also swap players
   ],
   botContext
 );
@@ -646,9 +652,33 @@ testHandler(cChatContext, "!balance", /You have 80 points, c!/);
 testHandler(dChatContext, "!balance", /You have 120 points, d!/);
 
 // check duels with the bot itself
+instance = createTestBot(
+  [
+    (u) =>
+      new BlackJackDuelBot(
+        botContext,
+        1,
+        () => {
+          return myDeck;
+        },
+        new BlackJackBrain(1)
+      ),
+  ],
+  botContext
+);
+testHandler(
+  aChatContext,
+  "!duel all testbot",
+  /maybe another time/
+);
+
 let moves = [];
 const seqBrain = new (class implements GameBrain<BlackJack> {
-  requestGame(args: string[]): { args: string[] } {
+  requestGame(
+    userId: string,
+    username: string,
+    args: string[]
+  ): { args: string[] } {
     return { args: [] };
   }
   move(game: BlackJack): { move: string; args: string[] } | undefined {

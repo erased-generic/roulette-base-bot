@@ -162,10 +162,11 @@ abstract class DuelBot<T extends Game> extends BotBase {
           return `${username}, I'm already playing with ${otherUsername}...`;
         }
       }
-      const botResponse = this.gameBrain.requestGame(args);
-      if (botResponse === undefined) {
+      const botResponse = this.gameBrain.requestGame(userId1, username, args);
+      if (typeof botResponse === 'string') {
         // bot rejects
-        return `${username}, I don't want to play with you.`;
+        this.unrendezvous(rendezvous);
+        return `${username}, ${botResponse}`;
       } else {
         // bot accepts
         // NOTE: currently bot only has `DuelAccepted` instances in `this.duels`

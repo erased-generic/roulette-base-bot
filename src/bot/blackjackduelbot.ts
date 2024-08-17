@@ -66,7 +66,7 @@ class BlackJackDuelBot
     deckGenerator: () => blackjackModule.Deck = BlackJackDuelBot.shuffledDeckGenerator,
     gameBrain:
       | GameBrain<blackjackModule.BlackJack>
-      | undefined = new blackjackModule.BlackJackBrain()
+      | undefined = new blackjackModule.BlackJackBrain(0.1)
   ) {
     super(botContext, playerShuffleChance, "blackjack duel", gameBrain);
     this.deckGenerator = deckGenerator;

@@ -103,8 +103,10 @@ class BalanceBot extends BotBase implements Bot {
     let msg = ``;
     let balance = this.getBalance(userId);
     let delta = claimSize;
-    if (Math.random() < chance) {
-      if (Math.random() < 0.5) {
+    const trickery = Math.random();
+    const trickery2 = Math.random();
+    if (trickery < chance) {
+      if (trickery2 < 0.5) {
         delta = Math.floor(balance / 2) - balance;
         msg += `You halved your balance!`;
       } else {
@@ -121,7 +123,7 @@ class BalanceBot extends BotBase implements Bot {
     } else if (delta > claimSize) {
       msg = "Lucky! " + msg;
     }
-    console.log(`* claim: ${userId}, ${context.username}, ${delta}`);
+    console.log(`* claim: ${userId}, ${context.username}, ${delta}, ${trickery} <> ${chance}, ${trickery2}`);
     return (
       msg +
       ` You claimed ${delta} points and now have ${balance} points, ${context["username"]}!`

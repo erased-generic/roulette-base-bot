@@ -1,4 +1,11 @@
-import { Game, GameBrain, GameContext, GameMoveResult, GameResult } from "./interfaces";
+import {
+  Game,
+  GameBrain,
+  GameContext,
+  GameMoveResult,
+  GameResult,
+  RejectingBrain
+} from "./interfaces";
 export { CardSuit, Card, Deck, Moves, BlackJack, BlackJackBrain };
 
 enum CardSuit {
@@ -99,7 +106,7 @@ class BlackJack implements Game {
   readonly moveHandlers = {
     [Moves.Hit]: this.hit.bind(this),
     [Moves.Stand]: this.stand.bind(this),
-  }
+  };
 
   deck: Deck = new Deck();
   hands: { [key: string]: Card[] } = {};
@@ -119,7 +126,8 @@ class BlackJack implements Game {
   }
 
   static getBalance(hand: Card[]): number {
-    let hasAce = false, balance = 0;
+    let hasAce = false,
+      balance = 0;
     for (const card of hand) {
       hasAce ||= card.value === 1;
       balance += Math.min(card.value, 10);
@@ -154,7 +162,10 @@ class BlackJack implements Game {
   }
 
   isPlaying(player: string): boolean {
-    return !BlackJack.is21(BlackJack.getBalance(this.hands[player])) && !BlackJack.isBust(BlackJack.getBalance(this.hands[player]));
+    return (
+      !BlackJack.is21(BlackJack.getBalance(this.hands[player])) &&
+      !BlackJack.isBust(BlackJack.getBalance(this.hands[player]))
+    );
   }
 
   nPlaying(): number {
@@ -176,14 +187,17 @@ class BlackJack implements Game {
       ranking: Object.entries(ranking)
         .map(([k, v]) => ({ balance: Number(k), players: v }))
         .sort((a, b) => b.balance - a.balance)
-        .map(x => x.players.sort())
+        .map((x) => x.players.sort()),
     };
   }
 
   selectNextPlayer(): GameResult | undefined {
     do {
       this.currentPlayer++;
-    } while (this.currentPlayer < this.players.length && !this.isPlaying(this.players[this.currentPlayer]));
+    } while (
+      this.currentPlayer < this.players.length &&
+      !this.isPlaying(this.players[this.currentPlayer])
+    );
 
     if (this.currentPlayer === this.players.length || this.nPlaying() === 1) {
       return this.calcResult();
@@ -216,10 +230,14 @@ class BlackJack implements Game {
           msg += ` - they got 21`;
         }
         msg += `!`;
-        console.log(`* hit: ${player} ${username} - ${this.hands[player].toString()} (${balance})`);
+        console.log(
+          `* hit: ${player} ${username} - ${this.hands[
+            player
+          ].toString()} (${balance})`
+        );
         return msg;
-      }
-    }
+      },
+    };
   }
 
   stand(): StandResult {
@@ -230,24 +248,31 @@ class BlackJack implements Game {
       balance,
       describe: (context: GameContext): string => {
         const username = context.getUsername(player);
-        console.log(`* stand: ${balance} ${username} - ${this.hands[player].toString()} (${balance})`);
+        console.log(
+          `* stand: ${balance} ${username} - ${this.hands[
+            player
+          ].toString()} (${balance})`
+        );
         return `${username} stands with ${balance}.`;
-      }
+      },
     };
   }
 }
 
-class BlackJackBrain implements GameBrain<BlackJack> {
-  requestGame(args: string[]): { args: string[]; } {
-    return { args: [] };
+class BlackJackBrain extends RejectingBrain<BlackJack> implements GameBrain<BlackJack> {
+  constructor(chance: number = 0) {
+    super(chance);
   }
 
-  move(game: BlackJack): { move: string; args: string[]; } {
+  override move(game: BlackJack): { move: string; args: string[] } | undefined {
     const deck = game.deck;
     let busts = 0;
     for (const card of deck.cards) {
-      busts +=
-        BlackJack.isBust(BlackJack.getBalance(game.hands[game.getCurrentPlayer()].concat([card]))) ? 1 : 0;
+      busts += BlackJack.isBust(
+        BlackJack.getBalance(game.hands[game.getCurrentPlayer()].concat([card]))
+      )
+        ? 1
+        : 0;
     }
     if (busts / deck.cards.length >= 0.5) {
       // more likely to bust, stand

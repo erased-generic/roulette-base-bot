@@ -11,7 +11,8 @@ export {
   GameContext,
   GameMoveResult,
   Game,
-  GameBrain
+  GameBrain,
+  RejectingBrain
 };
 
 import { UserData } from "./userdata";
@@ -115,6 +116,52 @@ interface Game {
 }
 
 interface GameBrain<T extends Game> {
-  requestGame(args: string[]): { args: string[] } | undefined;
+  requestGame(userId: string, username: string, args: string[]): { args: string[] } | string;
   move(game: T): { move: string, args: string[] } | undefined;
+}
+
+
+class RejectingBrain<T extends Game> implements GameBrain<T> {
+  chance: number;
+
+  constructor(chance: number) {
+    this.chance = chance;
+  }
+
+  static hashCode(s: string) {
+    return (
+      s.split("").reduce(function (a, b) {
+        a = (a << 5) - a + b.charCodeAt(0);
+        return a & a;
+      }, 0) >>> 0
+    );
+  }
+
+  static readonly UPDATE_INTERVAL_SECONDS = 10 * 60;
+
+  requestGame(
+    userId: string,
+    username: string,
+    args: string[]
+  ): { args: string[] } | string {
+    const intervalId = (
+      Date.now() /
+      1000 /
+      RejectingBrain.UPDATE_INTERVAL_SECONDS
+    ).toFixed(0);
+    const hash = RejectingBrain.hashCode(username + "@" + intervalId);
+    console.log(
+      `* requestGame: ${username} ${intervalId} ${hash} ${this.chance}`
+    );
+    if (hash % 100 < this.chance * 100) {
+      return `I'm kind of busy right now, maybe another time... Like in ${
+        RejectingBrain.UPDATE_INTERVAL_SECONDS / 60
+      } minutes?`;
+    }
+    return { args: [] };
+  }
+
+  move(game: T): { move: string, args: string[] } | undefined {
+    return undefined;
+  }
 }
