@@ -1,6 +1,7 @@
 export { UserDatum, UserData, FileUserData, MemoryUserData };
 
 import * as fs from 'fs';
+import * as path from 'path';
 
 interface UserDatum {
   username?: string;
@@ -63,6 +64,7 @@ class FileUserData<T> extends UserData<T> {
   }
 
   writeUserData() {
+    fs.mkdirSync(path.dirname(this.filePath), { recursive: true });
     fs.writeFileSync(this.filePath, JSON.stringify(this.userData), 'utf8');
   }
 }
