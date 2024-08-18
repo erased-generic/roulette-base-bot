@@ -1,7 +1,7 @@
 export { BalanceBot };
 
 import { UserData } from "../util/userdata";
-import { Bot, BotContext, BotHandler, ChatContext } from "../util/interfaces";
+import { Bot, BotContext, BotHandler, ChatContext, formatTime } from "../util/interfaces";
 import { BotBase, BotBaseContext, PerUserData } from "./botbase";
 
 class BalanceBot extends BotBase implements Bot {
@@ -76,10 +76,7 @@ class BalanceBot extends BotBase implements Bot {
     // Claim 100 points per 30 minutes
     // If `Math.rand() < chance`, double or half your balance
     const claimSize = BalanceBot.CLAIM_SIZE;
-    const minute = 1000 * 60;
-    const hour = minute * 60;
-    const day = hour * 24;
-    const claimCooldown = BalanceBot.CLAIM_COOLDOWN_MINUTES * minute;
+    const claimCooldown = BalanceBot.CLAIM_COOLDOWN_MINUTES * 60 * 1000;
 
     const userId = context["user-id"];
 
@@ -88,16 +85,9 @@ class BalanceBot extends BotBase implements Bot {
     if (lastClaim !== undefined) {
       const elapsed = now - lastClaim;
       if (elapsed < claimCooldown) {
-        let msg = `You are on cooldown, ${context["username"]}! Please wait for `;
-        const eta = claimCooldown - elapsed;
-        if (eta < minute * 1.5) {
-          msg += `a minute`;
-        } else if (eta < hour) {
-          msg += `${Math.round(eta / minute)} minutes`;
-        } else {
-          msg += `${Math.round(eta / hour)} hours`;
-        }
-        return msg;
+        return `You are on cooldown, ${
+          context["username"]
+        }! Please wait for ${formatTime(claimCooldown - elapsed)}`;
       }
     }
     let msg = ``;

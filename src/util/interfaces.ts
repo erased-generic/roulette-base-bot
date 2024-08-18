@@ -7,6 +7,7 @@ export {
   selectHandler,
   callHandler,
   composeBots,
+  formatTime,
   GameResult,
   GameContext,
   GameMoveResult,
@@ -94,6 +95,19 @@ function composeBots(bots: Bot[]): Bot {
   return bot;
 }
 
+function formatTime(timeMs: number) {
+  const minute = 1000 * 60;
+  const hour = minute * 60;
+
+  if (timeMs < minute * 1.5) {
+    return `a minute`;
+  } else if (timeMs < hour) {
+    return `${Math.round(timeMs / minute)} minutes`;
+  } else {
+    return `${Math.round(timeMs / hour)} hours`;
+  }
+}
+
 interface GameResult {
   ranking: string[][];
 }
@@ -137,7 +151,7 @@ class RejectingBrain<T extends Game> implements GameBrain<T> {
     );
   }
 
-  static readonly UPDATE_INTERVAL_SECONDS = 10 * 60;
+  static readonly UPDATE_INTERVAL_MS = 1000 * 60 * 10;
 
   requestGame(
     userId: string,
@@ -146,17 +160,16 @@ class RejectingBrain<T extends Game> implements GameBrain<T> {
   ): { args: string[] } | string {
     const intervalId = (
       Date.now() /
-      1000 /
-      RejectingBrain.UPDATE_INTERVAL_SECONDS
+      RejectingBrain.UPDATE_INTERVAL_MS
     ).toFixed(0);
     const hash = RejectingBrain.hashCode(username + "@" + intervalId);
     console.log(
       `* requestGame: ${username} ${intervalId} ${hash} ${this.chance}`
     );
     if (hash % 100 < this.chance * 100) {
-      return `I'm kind of busy right now, maybe another time... Like in ${
-        RejectingBrain.UPDATE_INTERVAL_SECONDS / 60
-      } minutes?`;
+      return `I'm kind of busy right now, maybe another time... Like in ${formatTime(
+        RejectingBrain.UPDATE_INTERVAL_MS
+      )}?`;
     }
     return { args: [] };
   }

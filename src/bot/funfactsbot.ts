@@ -6,7 +6,7 @@ import { BotBase, BotBaseContext, PerUserData } from "./botbase";
 import * as fs from "fs";
 
 class FunFactsBot extends BotBase implements Bot {
-  static readonly FACT_PRICE = 10;
+  static readonly FACT_PRICE = 500;
   facts: string[];
 
   readonly handlers: { [key: string]: BotHandler } = {
@@ -38,7 +38,7 @@ class FunFactsBot extends BotBase implements Bot {
     const userId = context["user-id"];
     const ensured = this.ensureBalance(userId, FunFactsBot.FACT_PRICE);
     if (typeof ensured === "string") {
-      return ensured;
+      return `Fun fact: ${ensured}`;
     }
     this.commitBalance(userId, FunFactsBot.FACT_PRICE, -FunFactsBot.FACT_PRICE);
     console.log(`* funfact: ${userId}, ${context.username}`);
