@@ -6,7 +6,7 @@ import { BotBase, BotBaseContext, PerUserData } from "./botbase";
 import * as fs from "fs";
 
 class FunFactsBot extends BotBase implements Bot {
-  static readonly FACT_PRICE = 500;
+  static readonly FACT_PRICE = 333;
   facts: string[];
 
   readonly handlers: { [key: string]: BotHandler } = {
