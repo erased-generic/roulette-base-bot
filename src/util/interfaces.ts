@@ -96,15 +96,15 @@ function composeBots(bots: Bot[]): Bot {
 }
 
 function formatTime(timeMs: number) {
-  const minute = 1000 * 60;
-  const hour = minute * 60;
+  const MINUTE_MS = 1000 * 60;
+  const HOUR_MS = MINUTE_MS * 60;
 
-  if (timeMs < minute * 1.5) {
+  if (timeMs < MINUTE_MS * 1.5) {
     return `a minute`;
-  } else if (timeMs < hour) {
-    return `${Math.round(timeMs / minute)} minutes`;
+  } else if (timeMs < HOUR_MS) {
+    return `${Math.round(timeMs / MINUTE_MS)} minutes`;
   } else {
-    return `${Math.round(timeMs / hour)} hours`;
+    return `${Math.round(timeMs / HOUR_MS)} hours`;
   }
 }
 
@@ -123,10 +123,10 @@ interface GameMoveResult {
 
 interface Game {
   getPlayers(): string[];
-  getCurrentPlayer(): string;
+  isCurrentPlayer(userId: string): boolean;
 
   init(): GameResult | undefined;
-  readonly moveHandlers: { [move: string]: (args: string[]) => GameMoveResult };
+  readonly moveHandlers: { [move: string]: (userId: string, args: string[]) => GameMoveResult };
 }
 
 interface GameBrain<T extends Game> {

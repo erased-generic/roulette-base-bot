@@ -176,6 +176,10 @@ class BlackJack implements Game {
     return this.players[this.currentPlayer];
   }
 
+  isCurrentPlayer(playerId: string): boolean {
+    return this.getCurrentPlayer() === playerId;
+  }
+
   calcResult(): GameResult {
     let ranking: { [key: number]: string[] } = {};
     for (const player of this.players) {
@@ -206,10 +210,6 @@ class BlackJack implements Game {
 
   getPlayers(): string[] {
     return this.players;
-  }
-
-  getMoves(): string[] {
-    return Object.values(Moves);
   }
 
   hit(): HitResult {

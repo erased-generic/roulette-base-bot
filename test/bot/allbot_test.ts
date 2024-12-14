@@ -2,8 +2,9 @@ import { RouletteBot } from '../../src/bot/roulettebot';
 import { PredictionBot } from '../../src/bot/predictionbot';
 import { ChatContext } from '../../src/util/interfaces';
 import { createTestBot, createTestBotContext, createTestUserData, instanceTestHandler, setBalanceNoReserved } from './utils';
-import { BlackJackDuelBot } from '../../src/bot/blackjackduelbot';
+import { BlackJackDuelImpl } from '../../src/bot/blackjackduelimpl';
 import { BlackJackBrain } from '../../src/util/blackjack';
+import { DuelBot } from '../../src/bot/duelbot';
 
 const botContext = createTestBotContext();
 let instance = createTestBot(
@@ -11,12 +12,12 @@ let instance = createTestBot(
     (ctx) => new RouletteBot(ctx),
     (ctx) => new PredictionBot(ctx, 100),
     (ctx) =>
-      new BlackJackDuelBot(
-        ctx,
-        0.5,
-        BlackJackDuelBot.shuffledDeckGenerator,
-        new BlackJackBrain(0)
-      ),
+      new DuelBot(ctx, 0.5, {
+        bj: new BlackJackDuelImpl(
+          BlackJackDuelImpl.shuffledDeckGenerator,
+          new BlackJackBrain(0)
+        ),
+      }),
   ],
   botContext
 );
