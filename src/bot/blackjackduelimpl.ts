@@ -2,13 +2,14 @@ import * as blackjackModule from "../util/blackjack";
 import { UserData } from "../util/userdata";
 import { Bot, BotHandler, GameBrain, GameResult } from "../util/interfaces";
 import { BotBaseContext, PerUserData } from "./botbase";
-import { DuelBot, DuelAccepted, DuelImpl, DuelMove } from "./duelbot";
+import { DuelBot, DuelAccepted, DuelImpl, DuelMove, DuelHandler } from "./duelbot";
 
 export { BlackJackDuelImpl };
 
 class BlackJackDuelImpl
   extends DuelImpl<blackjackModule.BlackJack>
 {
+  readonly handlers = {};
   readonly bindMoves: { [key: string]: DuelMove } = {
     hit: {
       description: "Pull a card",

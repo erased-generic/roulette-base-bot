@@ -60,6 +60,7 @@ class TestGame implements Game {
 
 class TestDuelImpl extends DuelImpl<TestGame> {
   duelDescription: string = "test duel";
+  readonly handlers = {};
   readonly bindMoves: { [key: string]: DuelMove } = {
     nop: {
       description: "nop",
@@ -953,6 +954,11 @@ testHandler(
   "!an dre",
   /b guessed red; they now have 1 points! These words are left: ab./
 );
+testHandler(
+  bChatContext,
+  "!hint",
+  /Hint: an answer for ab looks like ba!/
+)
 testHandler(
   aChatContext,
   "!an dre",

@@ -1,13 +1,20 @@
 import * as anagramsModule from "../util/anagrams";
 import { UserData } from "../util/userdata";
-import { Bot, BotHandler, GameBrain, GameResult } from "../util/interfaces";
+import { Bot, BotHandler, ChatContext, GameBrain, GameResult } from "../util/interfaces";
 import { BotBase, BotBaseContext, PerUserData } from "./botbase";
-import { DuelBot, DuelAccepted, DuelImpl, DuelMove } from "./duelbot";
+import { DuelBot, DuelAccepted, DuelImpl, DuelMove, DuelHandler } from "./duelbot";
 import * as fs from "fs";
 
 export { AnagramsDuelImpl };
 
 class AnagramsDuelImpl extends DuelImpl<anagramsModule.Anagrams> {
+  readonly handlers: { [key: string]: DuelHandler } = {
+    hint: {
+      action: this.getHint.bind(this),
+      description: "Get a hint for a random word",
+      format: "",
+    }
+  };
   readonly bindMoves: { [key: string]: DuelMove } = {
     an: {
       description: "Guess an anagram of the input words",
@@ -96,5 +103,28 @@ class AnagramsDuelImpl extends DuelImpl<anagramsModule.Anagrams> {
       this.anagrams,
       this.randomizer
     );
+  }
+
+  static maskWord(word: string): string {
+    if (word.length <= 2) {
+      return word;
+    }
+    return word[0] + "_".repeat(word.length - 2) + word[word.length - 1];
+  }
+
+  getHint(bot: DuelBot, context: ChatContext, args: string[]): string | undefined {
+    const userId = context["user-id"];
+    const duel = bot.duels[userId];
+    if (duel && duel instanceof DuelAccepted) {
+      const payload: anagramsModule.Anagrams = duel.payload;
+      if (!payload.unguessed.length) {
+        return "Invalid duel (how did you get here?)";
+      }
+      const word = payload.unguessed[Math.floor(Math.random() * payload.unguessed.length)];
+      const potential_anagrams = this.anagrams[word] || [];
+      const anagram = potential_anagrams[Math.floor(Math.random() * potential_anagrams.length)];
+      return `Hint: an answer for ${word} looks like ${AnagramsDuelImpl.maskWord(anagram)}!`;
+    }
+    return "No duel - no hint!";
   }
 }

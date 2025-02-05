@@ -1,4 +1,4 @@
-export { DuelCommand, DuelAccepted, DuelImpl, DuelMove, DuelBot };
+export { DuelCommand, DuelAccepted, DuelImpl, DuelMove, DuelHandler, DuelBot };
 
 import * as rouletteModule from "../util/roulette";
 import { UserData } from "../util/userdata";
@@ -89,7 +89,14 @@ interface DuelMove {
   format: string;
 }
 
+interface DuelHandler {
+  action: (bot: DuelBot, context: ChatContext, args: string[]) => string | undefined;
+  description: string;
+  format: string;
+}
+
 abstract class DuelImpl<T extends Game> {
+  abstract handlers: { [key: string]: DuelHandler };
   abstract bindMoves: { [key: string]: DuelMove };
   abstract duelDescription: string;
   readonly gameBrain?: GameBrain<T>;
@@ -175,6 +182,17 @@ class DuelBot extends BotBase implements Bot {
       ...Object.entries(this.duelImpls).reduce(
         (acc, duel) => ({
           ...acc,
+          ...Object.entries(duel[1].handlers).reduce(
+            (acc, [key, handler]) => ({
+              ...acc,
+              [key]: {
+                action: (context: ChatContext, args: string[]) => { return handler.action(this, context, args); },
+                description: `${duel[1].duelDescription} interface. ${handler.description}`,
+                format: handler.format,
+              },
+            }),
+            {}
+          ),
           ...Object.entries(duel[1].bindMoves).reduce(
             (acc, move) => ({
               ...acc,
