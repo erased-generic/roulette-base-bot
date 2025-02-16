@@ -12,7 +12,7 @@ class AnagramsDuelImpl extends DuelImpl<anagramsModule.Anagrams> {
     hint: {
       action: this.getHint.bind(this),
       description: "Get a hint for a random word",
-      format: "",
+      format: "[<word>]",
     }
   };
   readonly bindMoves: { [key: string]: DuelMove } = {
@@ -105,25 +105,13 @@ class AnagramsDuelImpl extends DuelImpl<anagramsModule.Anagrams> {
     );
   }
 
-  static maskWord(word: string): string {
-    if (word.length <= 2) {
-      return word;
-    }
-    return word[0] + "_".repeat(word.length - 2) + word[word.length - 1];
-  }
-
   getHint(bot: DuelBot, context: ChatContext, args: string[]): string | undefined {
     const userId = context["user-id"];
     const duel = bot.duels[userId];
     if (duel && duel instanceof DuelAccepted) {
       const payload: anagramsModule.Anagrams = duel.payload;
-      if (!payload.unguessed.length) {
-        return "Invalid duel (how did you get here?)";
-      }
-      const word = payload.unguessed[Math.floor(Math.random() * payload.unguessed.length)];
-      const potential_anagrams = this.anagrams[word] || [];
-      const anagram = potential_anagrams[Math.floor(Math.random() * potential_anagrams.length)];
-      return `Hint: an answer for ${word} looks like ${AnagramsDuelImpl.maskWord(anagram)}!`;
+      const hint = payload.getHint(args);
+      return `Hint: an answer for ${hint.word} looks like ${hint.hint}!`;
     }
     return "No duel - no hint!";
   }

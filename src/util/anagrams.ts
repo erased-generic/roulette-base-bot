@@ -7,6 +7,18 @@ interface GuessResult extends GameMoveResult {
   words: string[];
 }
 
+enum HintState {
+  None,
+  Ends,
+  EndsWithMiddle,
+  EndsWithTwoMiddle
+}
+
+class Hint {
+  anagram: string;
+  state: HintState;
+}
+
 class Anagrams implements Game {
   readonly moveHandlers = {
     'an': this.guessAnagram.bind(this),
@@ -17,6 +29,7 @@ class Anagrams implements Game {
   anagrams = {};
   randomizer: () => number = undefined;
   unguessed: string[] = [];
+  hints: { [key: string]: Hint } = {};
 
   constructor(players: string[], num_to_guess: number, anagrams: { [key: string]: string[] }, randomizer: () => number = () => Math.random()) {
     this.players = players;
@@ -113,6 +126,68 @@ class Anagrams implements Game {
         );
         return msg;
       },
+    };
+  }
+
+  static maskWordPos(word: string, unmaskIndices: number[]): string {
+    let masked = "_".repeat(word.length);
+    for (const index of unmaskIndices) {
+      masked = masked.substring(0, index) + word[index] + masked.substring(index + 1);
+    }
+    return masked;
+  }
+
+  static maskWord(word: string, hintState: HintState): string {
+    let unmaskIndices = [];
+    switch (hintState) {
+      case HintState.EndsWithTwoMiddle:
+        unmaskIndices.push(Math.floor((word.length - 1) / 2) + 1);
+      case HintState.EndsWithMiddle:
+        unmaskIndices.push(Math.floor((word.length - 1) / 2));
+      case HintState.Ends:
+        unmaskIndices.push(0);
+        unmaskIndices.push(word.length - 1);
+      case HintState.None:
+        break;
+    }
+    return Anagrams.maskWordPos(
+      word,
+      unmaskIndices
+        .filter((x) => x >= 0 && x < word.length)
+        .slice(-(word.length - 1))
+    );
+  }
+
+  getHint(args: string[]): { word: string; hint?: string } {
+    if (this.unguessed.length == 0) {
+      return undefined;
+    }
+    let word = this.unguessed[Math.floor(Math.random() * this.unguessed.length)];
+    if (args.length >= 2 && this.unguessed.includes(args[1])) {
+      word = args[1];
+    }
+    if (!(word in this.hints)) {
+      const potential_anagrams = this.anagrams[word] || [];
+      const anagram = potential_anagrams[Math.floor(Math.random() * potential_anagrams.length)];
+      this.hints[word] = { anagram: anagram, state: HintState.None };
+    }
+    const hint = this.hints[word];
+    switch (hint.state) {
+      case HintState.None:
+        hint.state = HintState.Ends;
+        break;
+      case HintState.Ends:
+        hint.state = HintState.EndsWithMiddle;
+        break;
+      case HintState.EndsWithMiddle:
+        hint.state = HintState.EndsWithTwoMiddle;
+        break;
+      case HintState.EndsWithTwoMiddle:
+        break;
+    }
+    return {
+      word: word,
+      hint: Anagrams.maskWord(hint.anagram, hint.state),
     };
   }
 }

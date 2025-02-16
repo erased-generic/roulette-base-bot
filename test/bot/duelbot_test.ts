@@ -904,8 +904,8 @@ testHandler(dChatContext, "!nop", /test duel prompt/);
 
 // test anagrams
 let counter = 0;
-let anagrams = {'red': ['dre'], 'dre': ['red'], 'ab': ['ba'], 'ba': ['ab']};
-let words = ['red', 'dre', 'ab', 'ba'];
+let anagrams = {'longword': ['lordwong'], 'lordwong': ['longword'], 'ab': ['ba'], 'ba': ['ab']};
+let words = ['longword', 'lordwong', 'ab', 'ba'];
 function randomizer() {
   return Object.keys(anagrams).indexOf(words[counter++]) / Object.keys(anagrams).length;
 }
@@ -937,31 +937,66 @@ testHandler(
 testHandler(
   bChatContext,
   "!accept",
-  /Let the anagrams duel begin[\s\S]*These words are left: red, dre, ab, ba./
+  /Let the anagrams duel begin[\s\S]*These words are left: longword, lordwong, ab, ba./
 );
 testHandler(
+  bChatContext,
+  "!hint longword",
+  /Hint: an answer for longword looks like l______g!/
+)
+testHandler(
+  bChatContext,
+  "!hint longword",
+  /Hint: an answer for longword looks like l__d___g!/
+)
+testHandler(
+  bChatContext,
+  "!hint longword",
+  /Hint: an answer for longword looks like l__dw__g!/
+)
+testHandler(
+  bChatContext,
+  "!hint longword",
+  /Hint: an answer for longword looks like l__dw__g!/
+)
+testHandler(
+  bChatContext,
+  "!hint lordwong",
+  /Hint: an answer for lordwong looks like l______d!/
+)
+testHandler(
+  bChatContext,
+  "!hint lordwong",
+  /Hint: an answer for lordwong looks like l__g___d!/
+)
+testHandler(
+  bChatContext,
+  "!hint lordwong",
+  /Hint: an answer for lordwong looks like l__gw__d!/
+)
+testHandler(
+  bChatContext,
+  "!hint lordwong",
+  /Hint: an answer for lordwong looks like l__gw__d!/
+)
+testHandler(
   aChatContext,
-  "!an red",
-  /a guessed dre; they now have 1 points! These words are left: red, ab, ba./
+  "!an longword",
+  /a guessed lordwong; they now have 1 points! These words are left: longword, ab, ba./
 );
 testHandler(
   aChatContext,
   "!an ab",
-  /a guessed ba; they now have 2 points! These words are left: red, ab./
+  /a guessed ba; they now have 2 points! These words are left: longword, ab./
 );
 testHandler(
   bChatContext,
-  "!an dre",
-  /b guessed red; they now have 1 points! These words are left: ab./
+  "!an lordwong",
+  /b guessed longword; they now have 1 points! These words are left: ab./
 );
-testHandler(
-  bChatContext,
-  "!hint",
-  /Hint: an answer for ab looks like ba!/
-)
 testHandler(
   aChatContext,
-  "!an dre",
+  "!an lordwong",
   /a did not guess any anagrams; they still have 2 points! These words are left: ab./
 );
 testHandler(
