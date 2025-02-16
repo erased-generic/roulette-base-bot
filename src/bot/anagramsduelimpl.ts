@@ -11,8 +11,13 @@ class AnagramsDuelImpl extends DuelImpl<anagramsModule.Anagrams> {
   readonly handlers: { [key: string]: DuelHandler } = {
     hint: {
       action: this.getHint.bind(this),
-      description: "Get a hint for a random word",
-      format: "[<word>]",
+      description: "Get a hint for a specific word or a random word if none was specified",
+      format: "[<the word>]",
+    },
+    Hint: {
+      action: this.testCaseSensitive.bind(this),
+      description: "Test command case-sensitivity",
+      format: "",
     }
   };
   readonly bindMoves: { [key: string]: DuelMove } = {
@@ -114,5 +119,10 @@ class AnagramsDuelImpl extends DuelImpl<anagramsModule.Anagrams> {
       return `Hint: an answer for ${hint.word} looks like ${hint.hint}!`;
     }
     return "No duel - no hint!";
+  }
+
+  testCaseSensitive(bot: DuelBot, context: ChatContext, args: string[]): string | undefined {
+    console.log(`* testCaseSensitive context: ${JSON.stringify(context)}, args: ${JSON.stringify(args)}`);
+    return `context: ${JSON.stringify(context)}, args: ${JSON.stringify(args)}`;
   }
 }
