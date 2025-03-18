@@ -21,6 +21,7 @@ import { UserData } from "./userdata";
 interface ChatContext {
   username?: string;
   "user-id": string;
+  "sent-at"?: number;
   mod: boolean;
 }
 

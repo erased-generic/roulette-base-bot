@@ -29,7 +29,17 @@ class MiscBot extends BotBase implements Bot {
   static readonly actions: { [key: string]: MiscAction } = {
     hydrate: new PrintTextAction(10, "Hydrate", "A friendly reminder to hydrate!"),
     stretch: new PrintTextAction(10, "Stretch", "A friendly reminder to stretch!"),
-    ping: new PrintTextAction(1, "Ping", "pong"),
+    ping: {
+      price: 1,
+      description: "Pong",
+      format: "",
+      action: (bot, context, args) => {
+        if (context["sent-at"] !== undefined && !isNaN(context["sent-at"])) {
+          return `pong (${Date.now() - context["sent-at"]}ms)`;
+        }
+        return "pong";
+      },
+    }
   }
 
   readonly handlers: { [key: string]: BotHandler } = {
