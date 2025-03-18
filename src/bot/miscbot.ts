@@ -39,6 +39,14 @@ class MiscBot extends BotBase implements Bot {
         }
         return "pong";
       },
+    },
+    ctx: {
+      price: 1,
+      description: "Print context",
+      format: "",
+      action: (bot, context, args) => {
+        return `context: ${JSON.stringify(context)}, args: ${JSON.stringify(args)}`;
+      },
     }
   }
 
