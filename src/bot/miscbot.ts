@@ -29,6 +29,8 @@ class MiscBot extends BotBase implements Bot {
   static readonly actions: { [key: string]: MiscAction } = {
     hydrate: new PrintTextAction(10, "Hydrate", "A friendly reminder to hydrate!"),
     stretch: new PrintTextAction(10, "Stretch", "A friendly reminder to stretch!"),
+    eyebreak: new PrintTextAction(10, "A break for your eyes", "A friendly reminder to take a break and look at something 20 feet away (or 6 meters) for 20 seconds!"),
+    save: new PrintTextAction(10, "Save your work", "A friendly reminder to save your work!"),
     ping: {
       price: 1,
       description: "Pong",
