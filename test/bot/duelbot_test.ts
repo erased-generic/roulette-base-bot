@@ -98,6 +98,10 @@ class TestDuelImpl extends DuelImpl<TestGame> {
   }
 }
 
+/*
+ * test interface
+ */
+
 // first, test rendezvous mechanism
 const botContext = createTestBotContext();
 const userData = botContext.userData;
@@ -250,7 +254,9 @@ testHandler(
 testHandler(aChatContext, "!accept", /a is going all-in with 10 points!/);
 testHandler(aChatContext, "!unduel", /a forfeits the test duel/);
 
-// test an actual duel
+/*
+ * test blackjack
+ */
 myDeck.cards = new Deck().cards;
 instance = createTestBot(
   [
@@ -902,7 +908,63 @@ testHandler(bChatContext, "!check", /duel result was: you tied with a/);
 testHandler(cChatContext, "!nop", /test duel prompt/);
 testHandler(dChatContext, "!nop", /test duel prompt/);
 
-// test anagrams
+// regression test
+myDeck.cards = [
+  new Card(1, CardSuit.Club),
+  new Card(1, CardSuit.Spade),
+
+  new Card(9, CardSuit.Club),
+  new Card(10, CardSuit.Club),
+
+  new Card(12, CardSuit.Spade),
+  new Card(6, CardSuit.Club),
+  new Card(5, CardSuit.Heart),
+].reverse();
+setBalanceNoReserved(userData, "a", 270);
+setBalanceNoReserved(userData, "b", 10123);
+testHandler(
+  bChatContext,
+  "!duel 1000 a",
+  /a, reply with !accept \[b\] to accept the blackjack duel, if you're ready to bet 1000 points!/
+);
+testHandler(
+  aChatContext,
+  "!accept",
+  /Let the blackjack duel begin[\s\S]*b's hand: A♣,A♠, totaling 12;\s+a's hand: 9♣,10♣, totaling 19\.[\s\S]*b, your move!/
+);
+testHandler(
+  aChatContext,
+  "!balance",
+  /You have 270 points \(currently betted 270 of those\), a!/
+);
+testHandler(
+  bChatContext,
+  "!balance",
+  /You have 10123 points \(currently betted 1000 of those\), b!/
+);
+testHandler(
+  bChatContext,
+  "!hit",
+  /b pulls a Q♠, totaling 12! b, your move!/
+);
+testHandler(
+  bChatContext,
+  "!hit",
+  /b pulls a 6♣, totaling 18! b, your move!/
+);
+testHandler(
+  bChatContext,
+  "!hit",
+  /b pulls a 5♥, totaling 23 - they busted! The winner is a;\s+b lost 1000 points and now has 9123 points;\s+a won 1000 points and now has 1270 points/
+);
+testHandler(aChatContext, "!balance", /You have 1270 points, a!/);
+testHandler(bChatContext, "!balance", /You have 9123 points, b!/);
+testHandler(aChatContext, "!check", /duel result was: you won against b/);
+testHandler(bChatContext, "!check", /duel result was: you lost to a/);
+
+/*
+ * test anagrams
+ */
 let counter = 0;
 let anagrams = {'longword': ['lordwong'], 'lordwong': ['longword'], 'ab': ['ba'], 'ba': ['ab']};
 let words = ['longword', 'lordwong', 'ab', 'ba'];
@@ -918,6 +980,9 @@ instance = createTestBot(
   ],
   botContext
 );
+
+setBalanceNoReserved(userData, "a", 100);
+setBalanceNoReserved(userData, "b", 100);
 
 testHandler(
   aChatContext,

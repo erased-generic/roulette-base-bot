@@ -4,6 +4,7 @@ import * as rouletteModule from "../util/roulette";
 import { UserData } from "../util/userdata";
 import { Bot, BotHandler, ChatContext } from "../util/interfaces";
 import { BotBase, BotBaseContext, PerUserData } from "./botbase";
+import Fraction from "fraction.js";
 
 interface BetCommand {
   betNumbers: number[];
@@ -229,9 +230,9 @@ class RouletteBot extends BotBase implements Bot {
       (
         playerId: string,
         didWin: boolean,
-        chance: number,
+        chance: Fraction,
         amount: number,
-        payout: number
+        payout: Fraction
       ) => {
         console.log(
           `* roulette: ${playerId}, ${this.getUsername(playerId)}, ${payout}`

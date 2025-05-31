@@ -4,6 +4,7 @@ import * as rouletteModule from "../util/roulette";
 import { UserData } from "../util/userdata";
 import { Bot, BotHandler, ChatContext } from "../util/interfaces";
 import { PerUserData, BotBase, BotBaseContext } from "./botbase";
+import Fraction from "fraction.js";
 
 interface PredictCommand {
   predictNumber: number;
@@ -229,9 +230,9 @@ class PredictionBot extends BotBase implements Bot {
       (
         playerId: string,
         didWin: boolean,
-        chance: number,
+        chance: Fraction,
         amount: number,
-        payout: number
+        payout: Fraction
       ) => {
         console.log(
           `* outcome: ${playerId}, ${this.getUsername(playerId)}, ${payout}`

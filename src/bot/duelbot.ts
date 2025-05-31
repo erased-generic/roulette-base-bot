@@ -13,6 +13,7 @@ import {
   GameResult,
 } from "../util/interfaces";
 import { BotBase, BotBaseContext, PerUserData } from "./botbase";
+import Fraction from "fraction.js";
 
 class DuelInfo {
   duelName: string;
@@ -378,9 +379,9 @@ class DuelBot extends BotBase implements Bot {
           (
             playerId: string,
             didWin: boolean,
-            chance: number,
+            chance: Fraction,
             amount: number,
-            payout: number
+            payout: Fraction
           ) => {
             console.log(
               `* ${duelImpl.duelDescription}: ${playerId}, ${this.getUsername(

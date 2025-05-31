@@ -10,6 +10,7 @@ export {
 import { UserData, UserDatum } from "../util/userdata";
 import { Bot, BotContext, ChatContext, composeBots } from "../util/interfaces";
 import { RouletteBase } from "../util/roulette";
+import Fraction from "fraction.js";
 
 interface PerUserData extends UserDatum {
   balance: number;
@@ -173,17 +174,17 @@ abstract class BotBase {
     return (
       playerId: string,
       didWin: boolean,
-      chance: number,
+      chance: Fraction,
       amount: number,
-      payout: number
+      payout: Fraction
     ) => {
-      payout = Math.floor(payout);
-      const balance = this.commitBalance(playerId, amount, payout);
+      let actualPayout = payout.floor().valueOf();
+      const balance = this.commitBalance(playerId, amount, actualPayout);
       return message(
         this.getUsername(playerId),
         didWin,
-        payout,
-        chance,
+        actualPayout,
+        chance.valueOf(),
         balance
       );
     };

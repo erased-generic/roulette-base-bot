@@ -1,4 +1,5 @@
 export { Bet, RouletteBase, Roulette, Prediction };
+import Fraction from "fraction.js";
 
 interface Bet {
   amount: number;
@@ -13,13 +14,13 @@ abstract class RouletteBase {
   // All betting places
   allNumbers: number[];
   // Casino's edge
-  edge: number;
+  edge: Fraction;
 
   static getAllNumbers(n: number): number[] {
     return Array.from({ length: n }, (_, i) => i);
   }
 
-  constructor(n: number, edge: number) {
+  constructor(n: number, edge: Fraction) {
     this.bets = {};
     this.lastNumber = NaN;
     this.edge = edge;
@@ -52,22 +53,28 @@ abstract class RouletteBase {
   }
 
   // Compute the chance of winning (note: may depend on this.lastNumber)
-  abstract allNumberChances(): { chances: number[], rescaled: boolean };
+  abstract allNumberChances(): { chances: Fraction[], rescaled: boolean };
 
   // Method to compute winnings for each player based on the last winning number
-  computeWinnings(callback: (playerId: string, didWin: boolean, chance: number, amount: number, payout: number) => void) {
+  computeWinnings(callback: (playerId: string, didWin: boolean, chance: Fraction, amount: number, payout: Fraction) => void) {
     // For each number in allNumbers, compute the chance of winning
     const allChances = this.allNumberChances();
     for (const playerId in this.bets) {
       const playerBet = this.bets[playerId];
-      let chance = 0;
+      let chance = new Fraction(0);
       for (const i of playerBet.numbers) {
-        chance += allChances.chances[i];
+        chance = chance.add(allChances.chances[i]);
       }
-      let payout = -playerBet.amount;
+      let payout = new Fraction(-playerBet.amount);
       const didWin = playerBet.numbers.includes(this.lastNumber);
       if (didWin) {
-        payout += (allChances.rescaled ? 1 : playerBet.amount) / playerBet.numbers.length * ((1 - this.edge) / allChances.chances[this.lastNumber]);
+        // 1 for rescaled to allow winning when going all-in with 0 points
+        payout = payout.add(
+          new Fraction(allChances.rescaled ? 1 : playerBet.amount)
+            .div(playerBet.numbers.length)
+            .mul(new Fraction(1).sub(this.edge))
+            .div(allChances.chances[this.lastNumber])
+        );
       }
       callback(playerId, didWin, chance, playerBet.amount, payout);
     }
@@ -84,55 +91,68 @@ abstract class RouletteBase {
 // Roulette class
 class Roulette extends RouletteBase {
   constructor(n: number) {
-    super(n, 1 / n);
+    super(n, new Fraction(n).inverse());
   }
 
   // Method to calculate independent winning chance
-  allNumberChances(): { chances: number[], rescaled: boolean } {
-    return { chances: this.allNumbers.map(() => 1 / this.allNumbers.length), rescaled: false };
+  allNumberChances(): { chances: Fraction[], rescaled: boolean } {
+    return { chances: this.allNumbers.map(() => new Fraction(this.allNumbers.length).inverse()), rescaled: false };
   }
 }
 
 // Predictions class
 class Prediction extends RouletteBase {
   constructor(n: number) {
-    super(n, 0);
+    super(n, new Fraction(0));
   }
 
+  static readonly INFTY: Fraction = new Fraction(BigInt(Number.MAX_VALUE) + BigInt(1));
+
   // Method to calculate prediction winning chance
-  allNumberChances(): { chances: number[], rescaled: boolean } {
-    let sum = 0;
-    let bets = this.allNumbers.map(() => 0);
+  allNumberChances(): { chances: Fraction[], rescaled: boolean } {
+    let sum = new Fraction(0);
+    let bets = this.allNumbers.map(() => new Fraction(0));
     for (const playerId in this.bets) {
-      sum += this.bets[playerId].amount;
+      sum = sum.add(this.bets[playerId].amount);
       for (const i of this.bets[playerId].numbers) {
-        bets[i] += this.bets[playerId].amount / this.bets[playerId].numbers.length;
+        bets[i] = bets[i].add(
+          new Fraction(this.bets[playerId].amount).div(
+            this.bets[playerId].numbers.length
+          )
+        );
       }
     }
 
-    let rescaled = false;
-    if (sum === 0) {
+    if (Object.keys(this.bets).length === 0) {
+      // no players
+      return { chances: this.allNumbers.map(() => new Fraction(0)), rescaled: false };
+    } else if (sum.equals(0)) {
       // amounts are 0 anyway, just make chances something that makes sense:
       // as if each player bet 1 in total
       for (const playerId in this.bets) {
-        sum += 1;
+        sum = sum.add(1);
         for (const i of this.bets[playerId].numbers) {
-          bets[i] += 1 / this.bets[playerId].numbers.length;
+          bets[i] = bets[i].add(
+            new Fraction(this.bets[playerId].numbers.length).inverse()
+          );
         }
       }
-    } else if (bets[this.lastNumber] === 0) {
+      return { chances: bets.map(b => b.div(sum)), rescaled: false };
+    } else if (bets[this.lastNumber].equals(0)) {
       // now we need to distinguish different 0-chance bets, rescale everything
-      rescaled = true;
-      let rescale = 0;
+      let rescale = new Fraction(0);
       for (const playerId in this.bets) {
         if (this.bets[playerId].numbers.includes(this.lastNumber)) {
-          rescale += 1 / this.bets[playerId].numbers.length;
+          rescale = rescale.add(
+            new Fraction(this.bets[playerId].numbers.length).inverse()
+          );
         }
       }
-      bets.fill(Infinity);
-      bets[this.lastNumber] = rescale;
+      bets.fill(Prediction.INFTY);
+      bets[this.lastNumber] = rescale.div(sum);
+      return { chances: bets, rescaled: true };
+    } else {
+      return { chances: bets.map(b => b.div(sum)), rescaled: false };
     }
-
-    return { chances: bets.map(b => b / sum), rescaled };
   }
 }
