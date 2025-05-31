@@ -5,9 +5,12 @@ export {
   BotBaseContext,
   UsernameUpdaterBot,
   composeBotsWithUsernameUpdater,
+  BotManager,
+  createMemoryUserData,
+  createFileUserData,
 };
 
-import { UserData, UserDatum } from "../util/userdata";
+import { FileUserData, MemoryUserData, UserData, UserDatum } from "../util/userdata";
 import { Bot, BotContext, ChatContext, composeBots } from "../util/interfaces";
 import { RouletteBase } from "../util/roulette";
 import Fraction from "fraction.js";
@@ -252,4 +255,41 @@ function composeBotsWithUsernameUpdater(
     ...botConstructors.map((constructor) => constructor(botContext)),
   ];
   return composeBots(bots);
+}
+
+function createFileUserData(channel: string): UserData<PerUserData> {
+  const data = new FileUserData<PerUserData>(
+    onReadUserData,
+    `data/private/${channel}/table.json`
+  );
+  return data;
+}
+
+function createMemoryUserData(channel: string): UserData<PerUserData> {
+  const data = new MemoryUserData<PerUserData>(onReadUserData, {});
+  return data;
+}
+
+class BotManager {
+  botFactory: (channel: string, userData: UserData<PerUserData>) => Bot;
+  userDataFactory: (channel: string) => UserData<PerUserData>;
+  theBots: { [channel: string]: Bot } = {};
+
+  constructor(
+    botFactory: (channel: string, userData: UserData<PerUserData>) => Bot,
+    userDataFactory: (channel: string) => UserData<PerUserData>
+  ) {
+    this.botFactory = botFactory;
+    this.userDataFactory = userDataFactory;
+  }
+
+  getOrCreateBot(channel: string): Bot {
+    if (!this.theBots[channel]) {
+      this.theBots[channel] = this.botFactory(
+        channel,
+        this.userDataFactory(channel)
+      );
+    }
+    return this.theBots[channel];
+  }
 }
