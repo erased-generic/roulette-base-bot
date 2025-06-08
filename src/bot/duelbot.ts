@@ -374,12 +374,12 @@ class DuelBot extends BotBase implements Bot {
             }
           }
         );
-        duel.prediction.lastNumber = winnerId === duel.userId1 ? 0 : 1;
+        duel.prediction.winningNumber = winnerId === duel.userId1 ? 0 : 1;
         duel.prediction.computeWinnings(
           (
             playerId: string,
             didWin: boolean,
-            chance: Fraction,
+            chance: number,
             amount: number,
             payout: Fraction
           ) => {

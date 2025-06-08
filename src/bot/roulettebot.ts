@@ -207,7 +207,7 @@ class RouletteBot extends BotBase implements Bot {
     let msg = "";
     this.roulette.runRoulette();
     // Run the roulette
-    msg += `Ball landed on: ${this.roulette.lastNumber}`;
+    msg += `Ball landed on: ${this.roulette.winningNumber}`;
     const callback = this.createWinningsCallback(
       (
         username: string | undefined,
@@ -230,7 +230,7 @@ class RouletteBot extends BotBase implements Bot {
       (
         playerId: string,
         didWin: boolean,
-        chance: Fraction,
+        chance: number,
         amount: number,
         payout: Fraction
       ) => {

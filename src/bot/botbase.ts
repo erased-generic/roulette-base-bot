@@ -177,7 +177,7 @@ abstract class BotBase {
     return (
       playerId: string,
       didWin: boolean,
-      chance: Fraction,
+      chance: number,
       amount: number,
       payout: Fraction
     ) => {
@@ -187,7 +187,7 @@ abstract class BotBase {
         this.getUsername(playerId),
         didWin,
         actualPayout,
-        chance.valueOf(),
+        chance,
         balance
       );
     };

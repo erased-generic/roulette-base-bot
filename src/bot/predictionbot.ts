@@ -205,7 +205,7 @@ class PredictionBot extends BotBase implements Bot {
       return (msg += `Dear mod ${context["username"]}, I can only handle a single outcome`);
     }
 
-    this.prediction.lastNumber = number[0];
+    this.prediction.winningNumber = number[0];
     msg += `Prediction resulted in outcome '${number}'`;
     const callback = this.createWinningsCallback(
       (
@@ -230,7 +230,7 @@ class PredictionBot extends BotBase implements Bot {
       (
         playerId: string,
         didWin: boolean,
-        chance: Fraction,
+        chance: number,
         amount: number,
         payout: Fraction
       ) => {

@@ -269,8 +269,8 @@ testHandler(
   new RegExp(
     "Closing the prediction\\. " +
     "Prediction resulted in outcome '2', " +
-    "a lost 100 points \\(coef .*?\\) and now has 0 points, " +
-    "b won 100 points \\(coef 99x\\) and now has 100 points"
+    "a lost 100 points \\(coef 0x\\) and now has 0 points, " +
+    "b won 100 points \\(coef Infinityx\\) and now has 100 points"
   )
 );
 testHandler(
