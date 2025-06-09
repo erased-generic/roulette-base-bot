@@ -1,7 +1,6 @@
 import * as anagramsModule from "../util/anagrams";
-import { UserData } from "../util/userdata";
-import { Bot, BotHandler, ChatContext, GameBrain, GameResult } from "../util/interfaces";
-import { BotBase, BotBaseContext, PerUserData } from "./botbase";
+import { ChatContext, GameBrain, GameResult } from "../util/interfaces";
+import { BotBase } from "./botbase";
 import { DuelBot, DuelAccepted, DuelImpl, DuelMove, DuelHandler } from "./duelbot";
 import * as fs from "fs";
 

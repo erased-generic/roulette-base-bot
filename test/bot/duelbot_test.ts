@@ -25,6 +25,7 @@ import {
   setBalanceNoReserved,
 } from "./utils";
 import { AnagramsDuelImpl } from "../../src/bot/anagramsduelimpl";
+import { WordleDuelImpl } from "../../src/bot/wordleduelimpl";
 
 function parse(args: string[]) {
   return DuelBot.parseDuelCommand(["", ...args], ["testduelname", "testduelname2"]);
@@ -965,107 +966,175 @@ testHandler(bChatContext, "!check", /duel result was: you lost to a/);
 /*
  * test anagrams
  */
-let counter = 0;
-let anagrams = {'longword': ['lordwong'], 'lordwong': ['longword'], 'ab': ['ba'], 'ba': ['ab']};
-let words = ['longword', 'lordwong', 'ab', 'ba'];
-function randomizer() {
-  return Object.keys(anagrams).indexOf(words[counter++]) / Object.keys(anagrams).length;
+{
+  let counter = 0;
+  let anagrams = {
+    longword: ["lordwong"],
+    lordwong: ["longword"],
+    ab: ["ba"],
+    ba: ["ab"],
+  };
+  let words = ["longword", "lordwong", "ab", "ba"];
+  function randomizer() {
+    return (
+      Object.keys(anagrams).indexOf(words[counter++]) /
+      Object.keys(anagrams).length
+    );
+  }
+  instance = createTestBot(
+    [
+      (u) =>
+        new DuelBot(u, 1, {
+          anagrams: new AnagramsDuelImpl(anagrams, 4, undefined, randomizer),
+        }),
+    ],
+    botContext
+  );
+
+  setBalanceNoReserved(userData, "a", 100);
+  setBalanceNoReserved(userData, "b", 100);
+
+  testHandler(aChatContext, "!duels", /List of duel types: anagrams/);
+  testHandler(aChatContext, "!duel 10 b aaa", /aaa is not a valid duel/);
+  testHandler(
+    aChatContext,
+    "!duel 10 b anagrams",
+    /b, reply with !accept \[a\] to accept the anagrams duel, if you're ready to bet 10 points!/
+  );
+  testHandler(
+    bChatContext,
+    "!accept",
+    /Let the anagrams duel begin[\s\S]*These words are left: longword, lordwong, ab, ba./
+  );
+  testHandler(
+    bChatContext,
+    "!hint longword",
+    /Hint: an answer for longword looks like l______g!/
+  );
+  testHandler(
+    bChatContext,
+    "!hint longword",
+    /Hint: an answer for longword looks like l__d___g!/
+  );
+  testHandler(
+    bChatContext,
+    "!hint longword",
+    /Hint: an answer for longword looks like l__dw__g!/
+  );
+  testHandler(
+    bChatContext,
+    "!hint longword",
+    /Hint: an answer for longword looks like l__dw__g!/
+  );
+  testHandler(
+    bChatContext,
+    "!hint lordwong",
+    /Hint: an answer for lordwong looks like l______d!/
+  );
+  testHandler(
+    bChatContext,
+    "!hint lordwong",
+    /Hint: an answer for lordwong looks like l__g___d!/
+  );
+  testHandler(
+    bChatContext,
+    "!hint lordwong",
+    /Hint: an answer for lordwong looks like l__gw__d!/
+  );
+  testHandler(
+    bChatContext,
+    "!hint lordwong",
+    /Hint: an answer for lordwong looks like l__gw__d!/
+  );
+  testHandler(
+    aChatContext,
+    "!an longword",
+    /a guessed lordwong; they now have 1 points! These words are left: longword, ab, ba./
+  );
+  testHandler(
+    aChatContext,
+    "!an ab",
+    /a guessed ba; they now have 2 points! These words are left: longword, ab./
+  );
+  testHandler(
+    bChatContext,
+    "!an lordwong",
+    /b guessed longword; they now have 1 points! These words are left: ab./
+  );
+  testHandler(
+    aChatContext,
+    "!an lordwong",
+    /a did not guess any anagrams; they still have 2 points! These words are left: ab./
+  );
+  testHandler(
+    aChatContext,
+    "!an ba",
+    /a guessed ab; they now have 3 points! The winner is a;[\s\S*]a won 10 points and now has 110 points;[\s\S*]b lost 10 points and now has 90 points/
+  );
 }
-instance = createTestBot(
-  [
-    (u) =>
-      new DuelBot(u, 1, {
-        anagrams: new AnagramsDuelImpl(anagrams, 4, undefined, randomizer),
-      }),
-  ],
-  botContext
-);
 
-setBalanceNoReserved(userData, "a", 100);
-setBalanceNoReserved(userData, "b", 100);
+/*
+ * test wordle
+ */
+{
+  let counter = 0;
+  let validGuesses = [
+    "crane",
+    "plane",
+    "enarc",
+  ];
+  function randomizer() {
+    counter = counter % validGuesses.length;
+    return counter++ / validGuesses.length;
+  }
+  instance = createTestBot(
+    [
+      (u) =>
+        new DuelBot(u, 1, {
+          wordle: new WordleDuelImpl(
+            validGuesses,
+            validGuesses,
+            undefined,
+            randomizer
+          ),
+        }),
+    ],
+    botContext
+  );
 
-testHandler(
-  aChatContext,
-  "!duels",
-  /List of duel types: anagrams/
-);
-testHandler(
-  aChatContext,
-  "!duel 10 b aaa",
-  /aaa is not a valid duel/
-);
-testHandler(
-  aChatContext,
-  "!duel 10 b anagrams",
-  /b, reply with !accept \[a\] to accept the anagrams duel, if you're ready to bet 10 points!/
-);
-testHandler(
-  bChatContext,
-  "!accept",
-  /Let the anagrams duel begin[\s\S]*These words are left: longword, lordwong, ab, ba./
-);
-testHandler(
-  bChatContext,
-  "!hint longword",
-  /Hint: an answer for longword looks like l______g!/
-)
-testHandler(
-  bChatContext,
-  "!hint longword",
-  /Hint: an answer for longword looks like l__d___g!/
-)
-testHandler(
-  bChatContext,
-  "!hint longword",
-  /Hint: an answer for longword looks like l__dw__g!/
-)
-testHandler(
-  bChatContext,
-  "!hint longword",
-  /Hint: an answer for longword looks like l__dw__g!/
-)
-testHandler(
-  bChatContext,
-  "!hint lordwong",
-  /Hint: an answer for lordwong looks like l______d!/
-)
-testHandler(
-  bChatContext,
-  "!hint lordwong",
-  /Hint: an answer for lordwong looks like l__g___d!/
-)
-testHandler(
-  bChatContext,
-  "!hint lordwong",
-  /Hint: an answer for lordwong looks like l__gw__d!/
-)
-testHandler(
-  bChatContext,
-  "!hint lordwong",
-  /Hint: an answer for lordwong looks like l__gw__d!/
-)
-testHandler(
-  aChatContext,
-  "!an longword",
-  /a guessed lordwong; they now have 1 points! These words are left: longword, ab, ba./
-);
-testHandler(
-  aChatContext,
-  "!an ab",
-  /a guessed ba; they now have 2 points! These words are left: longword, ab./
-);
-testHandler(
-  bChatContext,
-  "!an lordwong",
-  /b guessed longword; they now have 1 points! These words are left: ab./
-);
-testHandler(
-  aChatContext,
-  "!an lordwong",
-  /a did not guess any anagrams; they still have 2 points! These words are left: ab./
-);
-testHandler(
-  aChatContext,
-  "!an ba",
-  /a guessed ab; they now have 3 points! The winner is a;[\s\S*]a won 10 points and now has 110 points;[\s\S*]b lost 10 points and now has 90 points/
-);
+  setBalanceNoReserved(userData, "a", 100);
+  setBalanceNoReserved(userData, "b", 100);
+
+  testHandler(aChatContext, "!duels", /List of duel types: wordle/);
+  testHandler(aChatContext, "!duel 10 b aaa", /aaa is not a valid duel/);
+  testHandler(
+    aChatContext,
+    "!duel 10 b wordle",
+    /b, reply with !accept \[a\] to accept the wordle duel, if you're ready to bet 10 points!/
+  );
+  testHandler(
+    bChatContext,
+    "!accept",
+    /Let the wordle duel begin/
+  );
+  testHandler(
+    aChatContext,
+    "!wo plane",
+    /a guessed: PL🅰🅽🅴/
+  );
+  testHandler(
+    aChatContext,
+    "!wo aaaaa",
+    /Not a word/
+  );
+  testHandler(
+    bChatContext,
+    "!wo enarc",
+    /b guessed: 🄔🄝🅰🄡🄒/
+  );
+  testHandler(
+    aChatContext,
+    "!wo crane",
+    /a guessed: 🅲🆁🅰🅽🅴! The winner is a;[\s\S*]a won 10 points and now has 110 points;[\s\S*]b lost 10 points and now has 90 points/
+  );
+}

@@ -1,5 +1,4 @@
 import { Game, GameContext, GameMoveResult, GameResult } from "./interfaces";
-import * as fs from 'fs';
 export { Anagrams };
 
 interface GuessResult extends GameMoveResult {
@@ -11,7 +10,7 @@ enum HintState {
   None,
   Ends,
   EndsWithMiddle,
-  EndsWithTwoMiddle
+  EndsWithTwoMiddle,
 }
 
 class Hint {
@@ -21,34 +20,40 @@ class Hint {
 
 class Anagrams implements Game {
   readonly moveHandlers = {
-    'an': this.guessAnagram.bind(this),
+    an: this.guessAnagram.bind(this),
   };
 
-  players: string[] = [];
-  scores: { [key: string]: number } = {};
-  anagrams = {};
-  randomizer: () => number = undefined;
-  unguessed: string[] = [];
-  hints: { [key: string]: Hint } = {};
+  readonly anagrams = {};
+  readonly randomizer: () => number = undefined;
+  readonly players: string[] = [];
+  readonly scores: { [key: string]: number } = {};
+  readonly unguessed: string[] = [];
+  readonly hints: { [key: string]: Hint } = {};
 
-  constructor(players: string[], num_to_guess: number, anagrams: { [key: string]: string[] }, randomizer: () => number = () => Math.random()) {
-    this.players = players;
+  constructor(
+    players: string[],
+    numToGuess: number,
+    anagrams: { [key: string]: string[] },
+    randomizer: () => number = () => Math.random()
+  ) {
     this.anagrams = anagrams;
     this.randomizer = randomizer;
+    this.players = players;
     for (const player of players) {
       this.scores[player] = 0;
     }
 
-    while (this.unguessed.length < num_to_guess) {
-      let word = Object.keys(this.anagrams)[Math.floor(this.randomizer() * Object.keys(this.anagrams).length)];
+    while (this.unguessed.length < numToGuess) {
+      let word = Object.keys(this.anagrams)[
+        Math.floor(this.randomizer() * Object.keys(this.anagrams).length)
+      ];
       if (!this.unguessed.includes(word)) {
         this.unguessed.push(word);
       }
     }
   }
 
-  init(): undefined {
-  }
+  init(): undefined {}
 
   isCurrentPlayer(playerId: string): boolean {
     return true;
@@ -92,12 +97,12 @@ class Anagrams implements Game {
 
   guessAnagram(player: string, args: string[]): GuessResult {
     const guess = args[1];
-    const potential_anagrams = this.anagrams[guess] || [];
-    const guessed_anagrams = [];
-    for (const anagram of potential_anagrams) {
+    const potentialAnagrams = this.anagrams[guess] || [];
+    const guessedAnagrams = [];
+    for (const anagram of potentialAnagrams) {
       if (this.unguessed.includes(anagram)) {
         this.unguessed.splice(this.unguessed.indexOf(anagram), 1);
-        guessed_anagrams.push(anagram);
+        guessedAnagrams.push(anagram);
         this.scores[player]++;
       }
     }
@@ -105,24 +110,28 @@ class Anagrams implements Game {
     return {
       result: this.isFinal() ? this.calcResult() : undefined,
       score: this.scores[player],
-      words: guessed_anagrams,
+      words: guessedAnagrams,
       describe: (context: GameContext): string => {
         const username = context.getUsername(player);
         let msg = `${username} `;
         let balanceMsg = ``;
-        if (guessed_anagrams.length == 0) {
+        if (guessedAnagrams.length == 0) {
           msg += `did not guess any anagrams`;
           balanceMsg = `still`;
-        } else if (guessed_anagrams.length == 1) {
-          msg += `guessed ${guessed_anagrams[0]}`;
+        } else if (guessedAnagrams.length == 1) {
+          msg += `guessed ${guessedAnagrams[0]}`;
           balanceMsg = `now`;
         } else {
-          msg += `guessed ${guessed_anagrams.length} anagrams: ${guessed_anagrams.join(', ')}`;
+          msg += `guessed ${
+            guessedAnagrams.length
+          } anagrams: ${guessedAnagrams.join(", ")}`;
           balanceMsg = `now`;
         }
         msg += `; they ${balanceMsg} have ${this.scores[player]} points!`;
         console.log(
-          `* guessAnagram: ${player} ${username} ${guess} - ${guessed_anagrams.toString()} (${this.scores[player]})`
+          `* guessAnagram: ${player} ${username} ${guess} - ${guessedAnagrams.toString()} (${
+            this.scores[player]
+          })`
         );
         return msg;
       },
@@ -132,7 +141,8 @@ class Anagrams implements Game {
   static maskWordPos(word: string, unmaskIndices: number[]): string {
     let masked = "_".repeat(word.length);
     for (const index of unmaskIndices) {
-      masked = masked.substring(0, index) + word[index] + masked.substring(index + 1);
+      masked =
+        masked.substring(0, index) + word[index] + masked.substring(index + 1);
     }
     return masked;
   }
@@ -162,13 +172,17 @@ class Anagrams implements Game {
     if (this.unguessed.length == 0) {
       return undefined;
     }
-    let word = this.unguessed[Math.floor(Math.random() * this.unguessed.length)];
+    let word =
+      this.unguessed[Math.floor(Math.random() * this.unguessed.length)];
     if (args.length >= 2 && this.unguessed.includes(args[1])) {
       word = args[1];
     }
     if (!(word in this.hints)) {
-      const potential_anagrams = this.anagrams[word] || [];
-      const anagram = potential_anagrams[Math.floor(Math.random() * potential_anagrams.length)];
+      const potentialAnagrams = this.anagrams[word] || [];
+      const anagram =
+        potentialAnagrams[
+          Math.floor(Math.random() * potentialAnagrams.length)
+        ];
       this.hints[word] = { anagram: anagram, state: HintState.None };
     }
     const hint = this.hints[word];
