@@ -78,8 +78,9 @@ abstract class RouletteBase {
     for (const i of playerBet.numbers) {
       if (allChances.chances[i] instanceof Infty) {
         return allChances.multiplier.equals(0) ? 1 : Infinity;
+      } else {
+        playerWonChance = playerWonChance.add(allChances.chances[i]);
       }
-      playerWonChance = playerWonChance.add(allChances.chances[i]);
     }
     return allChances.multiplier.mul(playerWonChance).valueOf();
   }
