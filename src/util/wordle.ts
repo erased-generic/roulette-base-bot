@@ -17,7 +17,7 @@ interface ValidGuessResult extends GuessResult {
 
 class Wordle implements Game {
   readonly moveHandlers = {
-    wo: this.guessWord.bind(this),
+    wordleGuess: this.guessWord.bind(this),
   };
 
   readonly validTargets: string[];

@@ -20,7 +20,7 @@ class Hint {
 
 class Anagrams implements Game {
   readonly moveHandlers = {
-    an: this.guessAnagram.bind(this),
+    anagramGuess: this.guessAnagram.bind(this),
   };
 
   readonly anagrams: { [key: string]: string[] };

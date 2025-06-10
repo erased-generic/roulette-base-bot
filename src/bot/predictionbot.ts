@@ -23,27 +23,27 @@ class PredictionBot extends BotBase {
       description: "Remove all your predictions",
       format: "",
     },
-    open: {
+    openPrediction: {
       action: this.openPredictionHandler.bind(this),
       description: "Open a prediction (mod-only)",
       format: "",
     },
-    status: {
+    statusPrediction: {
       action: this.predictStatusHandler.bind(this),
       description: "View the status of the current prediction",
       format: "",
     },
-    close: {
+    closePrediction: {
       action: this.closePredictionHandler.bind(this),
       description: "Close the current prediction (mod-only)",
       format: "",
     },
-    refund: {
+    refundPrediction: {
       action: this.refundHandler.bind(this),
       description: "Refund the current prediction (mod-only)",
       format: "",
     },
-    outcome: {
+    outcomePrediction: {
       action: this.outcomeHandler.bind(this),
       description: "Select a prediction outcome (mod-only)",
       format: "<outcome number>",

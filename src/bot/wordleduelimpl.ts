@@ -8,8 +8,8 @@ export { WordleDuelImpl };
 
 class WordleDuelImpl extends DuelImpl<wordleModule.Wordle> {
   readonly handlers: { [key: string]: DuelHandler } = {};
-  readonly bindMoves: { [key: string]: DuelMove } = {
-    wo: {
+  readonly bindMoves = {
+    wordleGuess: {
       description: "Guess a wordle word",
       format: "<your guess>",
     },
@@ -82,11 +82,7 @@ class WordleDuelImpl extends DuelImpl<wordleModule.Wordle> {
         )
         .join("\n");
     }
-    msg = BotBase.appendMsg(
-      msg,
-      `Type ${bot.botContext.cmdMarker}wo ${this.bindMoves["wo"].format} to guess!`,
-      "\n"
-    );
+    msg = BotBase.appendMsg(msg, this.listMoves(bot), "\n");
     return msg;
   }
 

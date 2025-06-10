@@ -10,12 +10,13 @@ class AnagramsDuelImpl extends DuelImpl<anagramsModule.Anagrams> {
   readonly handlers: { [key: string]: DuelHandler } = {
     hint: {
       action: this.getHint.bind(this),
-      description: "Get a hint for a specific word or a random word if none was specified",
+      description:
+        "Get a hint for a specific word or a random word if none was specified",
       format: "[<the word>]",
     },
   };
-  readonly bindMoves: { [key: string]: DuelMove } = {
-    an: {
+  readonly bindMoves = {
+    anagramGuess: {
       description: "Guess an anagram of the input words",
       format: "<your guess>",
     },
@@ -71,7 +72,7 @@ class AnagramsDuelImpl extends DuelImpl<anagramsModule.Anagrams> {
           )
           .join(",\n") + ".";
     }
-    msg = BotBase.appendMsg(msg, `Type ${bot.botContext.cmdMarker}an ${this.bindMoves["an"].format} to guess!`, '\n');
+    msg = BotBase.appendMsg(msg, this.listMoves(bot), "\n");
     return msg;
   }
 
@@ -104,7 +105,11 @@ class AnagramsDuelImpl extends DuelImpl<anagramsModule.Anagrams> {
     );
   }
 
-  getHint(bot: DuelBot, context: ChatContext, args: string[]): string | undefined {
+  getHint(
+    bot: DuelBot,
+    context: ChatContext,
+    args: string[]
+  ): string | undefined {
     const userId = context["user-id"];
     const duel = bot.duels[userId];
     if (duel && duel instanceof DuelAccepted) {

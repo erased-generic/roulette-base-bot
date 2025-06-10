@@ -89,8 +89,8 @@ class Deck {
 }
 
 enum Moves {
-  Hit = "hit",
-  Stand = "stand",
+  Hit = "hitBJ",
+  Stand = "standBJ",
 }
 
 interface StandResult extends GameMoveResult {

@@ -1,21 +1,19 @@
 import * as blackjackModule from "../util/blackjack";
 import { UserData } from "../util/userdata";
 import { Bot, BotHandler, GameBrain, GameResult } from "../util/interfaces";
-import { BotBaseContext, PerUserData } from "./botbase";
+import { BotBase, BotBaseContext, PerUserData } from "./botbase";
 import { DuelBot, DuelAccepted, DuelImpl, DuelMove, DuelHandler } from "./duelbot";
 
 export { BlackJackDuelImpl };
 
-class BlackJackDuelImpl
-  extends DuelImpl<blackjackModule.BlackJack>
-{
+class BlackJackDuelImpl extends DuelImpl<blackjackModule.BlackJack> {
   readonly handlers = {};
-  readonly bindMoves: { [key: string]: DuelMove } = {
-    hit: {
+  readonly bindMoves = {
+    hitBJ: {
       description: "Pull a card",
       format: "",
     },
-    stand: {
+    standBJ: {
       description: "Stand and end your turn",
       format: "",
     },
@@ -57,7 +55,7 @@ class BlackJackDuelImpl
       return "";
     }
     const players = [duel.userId1, duel.userId2];
-    return (
+    return BotBase.appendMsg(
       players
         .map(
           (userId) =>
@@ -68,8 +66,9 @@ class BlackJackDuelImpl
               duel.payload.hands[userId]
             )}`
         )
-        .join(";\n") +
-      `. Type ${bot.botContext.cmdMarker}hit or ${bot.botContext.cmdMarker}stand to play!`
+        .join(";\n") + ".",
+      this.listMoves(bot),
+      "\n"
     );
   }
 

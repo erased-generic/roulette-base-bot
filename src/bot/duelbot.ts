@@ -98,14 +98,11 @@ interface DuelHandler {
 
 abstract class DuelImpl<T extends Game> {
   abstract handlers: { [key: string]: DuelHandler };
-  abstract bindMoves: { [key: string]: DuelMove };
+  abstract bindMoves: { [key in keyof T["moveHandlers"]]: DuelMove };
   abstract duelDescription: string;
   abstract gameBrain?: GameBrain<T>;
 
-  abstract printDuelIntro(
-    bot: DuelBot,
-    duel: DuelAccepted<T>
-  ): string;
+  abstract printDuelIntro(bot: DuelBot, duel: DuelAccepted<T>): string;
   abstract printDuelStatus(
     bot: DuelBot,
     duel: DuelAccepted<T>,
@@ -122,6 +119,22 @@ abstract class DuelImpl<T extends Game> {
     moreInfo: boolean,
     result: GameResult
   ): string;
+
+  protected listMoves(bot: DuelBot): string {
+    const listMove = (move: [string, DuelMove]) => `${bot.botContext.cmdMarker}${move[0]} ${move[1].format}`;
+    const moves = Object.entries(this.bindMoves);
+
+    if (moves.length === 0) {
+      return "";
+    } else if (moves.length === 1) {
+      return `Type ${listMove(moves[0])} to play!`;
+    }
+    const last = moves[moves.length - 1];
+    return `Type ${moves
+      .slice(0, moves.length - 1)
+      .map(listMove)
+      .join(", ")} or ${listMove(last)} to play!`;
+  }
 
   abstract createDuelPayload(
     bot: DuelBot,
@@ -158,7 +171,7 @@ class DuelBot extends BotBase {
           "Multiple concurrent duels are supported",
         format: `<amount of points> <opponent username> [<duel name> = ${Object.keys(this.duelImpls)[0]}]`,
       },
-      accept: {
+      acceptDuel: {
         action: this.acceptHandler.bind(this),
         description:
           "Duel interface. Accept a duel request from another user. If you don't have enough points, you go all-in",
@@ -175,7 +188,7 @@ class DuelBot extends BotBase {
         description: "Duel interface. View all ongoing duels and duel requests",
         format: "",
       },
-      check: {
+      checkDuels: {
         action: this.checkHandler.bind(this),
         description: "Duel interface. View your current duel status",
         format: "",

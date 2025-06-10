@@ -91,7 +91,7 @@ function composeBots(bots: Bot[]): Bot {
           handlers.push([cmd, handler]);
           if (desc === undefined) {
             // fill in first match
-            desc = `${ctx.cmdMarker}${cmd}: ${handler.description}. Format: ${ctx.cmdMarker}${key} ${handler.format}`;
+            desc = `${ctx.cmdMarker}${cmd}: ${handler.description}. Format: ${ctx.cmdMarker}${cmd} ${handler.format}`;
           } else if (!exactMatch) {
             // no exact match and more than one match => skip description
             desc = "";

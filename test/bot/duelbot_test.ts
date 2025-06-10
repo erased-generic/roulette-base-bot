@@ -62,7 +62,7 @@ class TestGame implements Game {
 class TestDuelImpl extends DuelImpl<TestGame> {
   duelDescription: string = "test duel";
   readonly handlers = {};
-  readonly bindMoves: { [key: string]: DuelMove } = {
+  readonly bindMoves = {
     nop: {
       description: "nop",
       format: "",
