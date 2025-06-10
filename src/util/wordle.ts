@@ -12,7 +12,7 @@ interface GuessResult extends GameMoveResult {
 }
 
 interface ValidGuessResult extends GuessResult {
-  letters: LetterState[]
+  letters: LetterState[];
 }
 
 class Wordle implements Game {
@@ -25,12 +25,14 @@ class Wordle implements Game {
   readonly randomizer: () => number;
   readonly players: string[];
   readonly target: string;
+  readonly maxTurns: number;
   readonly history: ValidGuessResult[] = [];
 
   constructor(
     players: string[],
     validTargets: string[],
     validGuesses: string[],
+    maxTurns: number = 0,
     randomizer: () => number = () => Math.random()
   ) {
     this.validTargets = validTargets;
@@ -39,6 +41,7 @@ class Wordle implements Game {
     this.players = players;
     this.target =
       validTargets[Math.floor(this.randomizer() * validTargets.length)];
+    this.maxTurns = maxTurns;
   }
 
   init(): undefined {}
@@ -51,7 +54,10 @@ class Wordle implements Game {
     return this.players;
   }
 
-  private static calcLetterStates(guess: string, target: string): LetterState[] {
+  private static calcLetterStates(
+    guess: string,
+    target: string
+  ): LetterState[] {
     const states: LetterState[] = [];
     for (let i = 0; i < guess.length; i++) {
       if (guess[i] === target[i]) {
@@ -65,10 +71,17 @@ class Wordle implements Game {
     return states;
   }
 
-  private calcResult(playerWon: string): GameResult {
-    return {
-      ranking: [[playerWon], this.players.filter((p) => p !== playerWon)],
-    };
+  private calcResult(player: string, guess: string): GameResult | undefined {
+    if (guess === this.target) {
+      return {
+        ranking: [[player], this.players.filter((p) => p !== player)],
+      };
+    } else if (this.maxTurns > 0 && this.history.length >= this.maxTurns) {
+      return {
+        ranking: [this.players.filter((p) => p !== player), [player]],
+      };
+    }
+    return undefined;
   }
 
   guessWord(player: string, args: string[]): GuessResult {
@@ -85,9 +98,8 @@ class Wordle implements Game {
 
     const letterStates = Wordle.calcLetterStates(guess, this.target);
 
-    return {
+    const result = {
       guess: guess,
-      result: guess === this.target ? this.calcResult(player) : undefined,
       letters: letterStates,
       describe: (context: GameContext): string => {
         const username = context.getUsername(player);
@@ -95,6 +107,9 @@ class Wordle implements Game {
           guess,
           letterStates
         )}!`;
+        if (this.maxTurns > 0 && guess !== this.target) {
+          msg += ` You have ${this.maxTurns - this.history.length} guesses left.`;
+        }
         console.log(
           `* guessWordle: ${player} ${username} ${guess} - ${Wordle.renderLetterStates(
             guess,
@@ -104,11 +119,95 @@ class Wordle implements Game {
         return msg;
       },
     } as ValidGuessResult;
+    this.history.push(result);
+    result.result = this.calcResult(player, guess);
+    return result;
   }
 
-  static readonly WRONG_LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"];
-  static readonly WRONG_POSITION_LETTERS = ["🄐", "🄑", "🄒", "🄓", "🄔", "🄕", "🄖", "🄗", "🄘", "🄙", "🄚", "🄛", "🄜", "🄝", "🄞", "🄟", "🄠", "🄡", "🄢", "🄣", "🄤", "🄥", "🄦", "🄧", "🄨", "🄩"];
-  static readonly CORRECT_LETTERS = ["🅰", "🅱", "🅲", "🅳", "🅴", "🅵", "🅶", "🅷", "🅸", "🅹", "🅺", "🅻", "🅼", "🅽", "🅾", "🅿", "🆀", "🆁", "🆂", "🆃", "🆄", "🆅", "🆆", "🆇", "🆈", "🆉"];
+  static readonly WRONG_LETTERS = [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "J",
+    "K",
+    "L",
+    "M",
+    "N",
+    "O",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "W",
+    "X",
+    "Y",
+    "Z",
+  ];
+  static readonly WRONG_POSITION_LETTERS = [
+    "🄐",
+    "🄑",
+    "🄒",
+    "🄓",
+    "🄔",
+    "🄕",
+    "🄖",
+    "🄗",
+    "🄘",
+    "🄙",
+    "🄚",
+    "🄛",
+    "🄜",
+    "🄝",
+    "🄞",
+    "🄟",
+    "🄠",
+    "🄡",
+    "🄢",
+    "🄣",
+    "🄤",
+    "🄥",
+    "🄦",
+    "🄧",
+    "🄨",
+    "🄩",
+  ];
+  static readonly CORRECT_LETTERS = [
+    "🅰",
+    "🅱",
+    "🅲",
+    "🅳",
+    "🅴",
+    "🅵",
+    "🅶",
+    "🅷",
+    "🅸",
+    "🅹",
+    "🅺",
+    "🅻",
+    "🅼",
+    "🅽",
+    "🅾",
+    "🅿",
+    "🆀",
+    "🆁",
+    "🆂",
+    "🆃",
+    "🆄",
+    "🆅",
+    "🆆",
+    "🆇",
+    "🆈",
+    "🆉",
+  ];
 
   static renderLetterState(letter: string, state: LetterState): string {
     const charCode = letter.codePointAt(0)!;
@@ -129,7 +228,10 @@ class Wordle implements Game {
     }
   }
 
-  static renderLetterStates(guess: string, letterStates: LetterState[]): string {
+  static renderLetterStates(
+    guess: string,
+    letterStates: LetterState[]
+  ): string {
     return guess
       .split("")
       .map((letter, i) => Wordle.renderLetterState(letter, letterStates[i]))

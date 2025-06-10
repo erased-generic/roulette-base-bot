@@ -164,8 +164,12 @@ interface Game {
 }
 
 interface GameBrain<T extends Game> {
-  requestGame(userId: string, username: string, args: string[]): { args: string[] } | string;
-  move(game: T): { move: string, args: string[] } | undefined;
+  requestGame(
+    userId: string,
+    username: string,
+    args: string[]
+  ): { args: string[] } | string;
+  move(game: T): { move?: string & keyof T["moveHandlers"]; args: string[] } | undefined;
 }
 
 
@@ -208,7 +212,7 @@ class RejectingBrain<T extends Game> implements GameBrain<T> {
     return { args: [] };
   }
 
-  move(game: T): { move: string, args: string[] } | undefined {
+  move(game: T): { move?: string & keyof T["moveHandlers"]; args: string[] } | undefined {
     return undefined;
   }
 }

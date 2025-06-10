@@ -259,12 +259,17 @@ class BlackJack implements Game {
   }
 }
 
-class BlackJackBrain extends RejectingBrain<BlackJack> implements GameBrain<BlackJack> {
+class BlackJackBrain
+  extends RejectingBrain<BlackJack>
+  implements GameBrain<BlackJack>
+{
   constructor(chance: number = 0) {
     super(chance);
   }
 
-  override move(game: BlackJack): { move: string; args: string[] } | undefined {
+  override move(
+    game: BlackJack
+  ): { move: keyof BlackJack["moveHandlers"]; args: string[] } | undefined {
     const deck = game.deck;
     let busts = 0;
     for (const card of deck.cards) {

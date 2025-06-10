@@ -25,7 +25,7 @@ import {
   setBalanceNoReserved,
 } from "./utils";
 import { AnagramsDuelImpl } from "../../src/bot/anagramsduelimpl";
-import { WordleDuelImpl } from "../../src/bot/wordleduelimpl";
+import { DoNothingBrain, WordleDuelImpl } from "../../src/bot/wordleduelimpl";
 
 function parse(args: string[]) {
   return DuelBot.parseDuelCommand(["", ...args], ["testduelname", "testduelname2"]);
@@ -671,7 +671,7 @@ testHandler(
   /maybe another time/
 );
 
-let moves: string[] = [];
+let moves: Moves[] = [];
 const seqBrain = new (class implements GameBrain<BlackJack> {
   requestGame(
     userId: string,
@@ -680,7 +680,7 @@ const seqBrain = new (class implements GameBrain<BlackJack> {
   ): { args: string[] } {
     return { args: [] };
   }
-  move(game: BlackJack): { move: string; args: string[] } | undefined {
+  move(game: BlackJack) {
     if (moves.length === 0) {
       return undefined;
     }
@@ -1137,5 +1137,95 @@ testHandler(bChatContext, "!check", /duel result was: you lost to a/);
     aChatContext,
     "!wo crane",
     /a guessed: 🅲🆁🅰🅽🅴! The winner is a;[\s\S*]a won 10 points and now has 110 points;[\s\S*]b lost 10 points and now has 90 points/
+  );
+}
+
+// test wordle against bot
+{
+  let counter = 0;
+  let validGuesses = [
+    "crane",
+    "plane",
+    "enarc",
+  ];
+  function randomizer() {
+    return 0;
+  }
+  instance = createTestBot(
+    [
+      (u) =>
+        new DuelBot(u, 1, {
+          wordle: new WordleDuelImpl(
+            validGuesses,
+            validGuesses,
+            new DoNothingBrain(0),
+            randomizer
+          ),
+        }),
+    ],
+    botContext
+  );
+
+  setBalanceNoReserved(userData, "a", 100);
+  setBalanceNoReserved(userData, "testbot", 100);
+
+  testHandler(aChatContext, "!duels", /List of duel types: wordle/);
+  testHandler(
+    aChatContext,
+    "!duel 10 testbot wordle",
+    /I accept!/
+  );
+  testHandler(
+    aChatContext,
+    "!wo plane",
+    /a guessed: PL🅰🅽🅴/
+  );
+  testHandler(
+    aChatContext,
+    "!wo aaaaa",
+    /Not a word/
+  );
+  testHandler(
+    bChatContext,
+    "!wo enarc",
+    /b, you're not in a duel!/
+  );
+  testHandler(
+    aChatContext,
+    "!wo enarc",
+    /a guessed: 🄔🄝🅰🄡🄒/
+  );
+  testHandler(
+    aChatContext,
+    "!wo crane",
+    /a guessed: 🅲🆁🅰🅽🅴! The winner is a;[\s\S*]a won 10 points and now has 110 points/
+  );
+  testHandler(
+    aChatContext,
+    "!budget",
+    /The casino has 90 points/
+  );
+
+  setBalanceNoReserved(userData, "a", 100);
+  setBalanceNoReserved(userData, "testbot", 100);
+
+  testHandler(aChatContext, "!duels", /List of duel types: wordle/);
+  testHandler(
+    aChatContext,
+    "!duel 10 testbot wordle",
+    /I accept!/
+  );
+  for (let i = 0; i < 5; i++) {
+    testHandler(aChatContext, "!wo plane", /a guessed: PL🅰🅽🅴/);
+  }
+  testHandler(
+    aChatContext,
+    "!wo enarc",
+    /You have 0 guesses left. The winner is testbot;\s+a lost 10 points and now has 90 points/
+  );
+  testHandler(
+    aChatContext,
+    "!budget",
+    /The casino has 110 points/
   );
 }

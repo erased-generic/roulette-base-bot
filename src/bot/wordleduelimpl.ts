@@ -1,10 +1,19 @@
 import * as wordleModule from "../util/wordle";
-import { GameBrain, GameResult } from "../util/interfaces";
+import { GameBrain, GameResult, RejectingBrain } from "../util/interfaces";
 import { BotBase } from "./botbase";
 import { DuelBot, DuelAccepted, DuelImpl, DuelMove, DuelHandler } from "./duelbot";
 import * as fs from "fs";
 
-export { WordleDuelImpl };
+export { DoNothingBrain, WordleDuelImpl };
+
+class DoNothingBrain
+  extends RejectingBrain<wordleModule.Wordle>
+  implements GameBrain<wordleModule.Wordle>
+{
+  constructor(chance: number = 0) {
+    super(chance);
+  }
+}
 
 class WordleDuelImpl extends DuelImpl<wordleModule.Wordle> {
   readonly handlers: { [key: string]: DuelHandler } = {};
@@ -23,7 +32,9 @@ class WordleDuelImpl extends DuelImpl<wordleModule.Wordle> {
   constructor(
     validWordleTargets: string | string[],
     validWordleGuesses: string | string[],
-    gameBrain: GameBrain<wordleModule.Wordle> | undefined = undefined,
+    gameBrain:
+      | GameBrain<wordleModule.Wordle>
+      | undefined = new DoNothingBrain(0.1),
     randomizer: () => number = () => Math.random()
   ) {
     super();
@@ -111,6 +122,7 @@ class WordleDuelImpl extends DuelImpl<wordleModule.Wordle> {
       players,
       this.validWordleTargets,
       this.validWordleGuesses,
+      players.includes(bot.botContext.botUsername) ? 6 : 0,
       this.randomizer
     );
   }
