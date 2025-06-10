@@ -30,7 +30,7 @@ enum PredefinedBets {
   All0 = "all0",
 }
 
-class RouletteBot extends BotBase implements Bot {
+class RouletteBot extends BotBase {
   readonly handlers: { [key: string]: BotHandler } = {
     bet: {
       action: this.betHandler.bind(this),

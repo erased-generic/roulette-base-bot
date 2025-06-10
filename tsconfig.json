@@ -1,12 +1,13 @@
 {
   "compilerOptions": {
+    "strictNullChecks": true,
     "module": "commonjs",
     "esModuleInterop": true,
     "target": "es2017",
     "moduleResolution": "node",
     "sourceMap": true,
     "outDir": "dist",
-    "composite": true
+    "composite": true,
   },
   "lib": ["ES2017,DOM"],
   "include": ["src/**/*.ts", "test/**/*.ts"]

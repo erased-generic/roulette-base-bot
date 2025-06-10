@@ -6,15 +6,13 @@ class BlackJackTest extends BlackJack {
     super(players, deck);
   }
 
-  hit() {
-    const result = super.hit();
-    delete result.describe;
+  testHit() {
+    const { describe, ...result } = super.hit();
     return result;
   }
 
-  stand() {
-    const result = super.stand();
-    delete result.describe;
+  testStand() {
+    const { describe, ...result } = super.stand();
     return result;
   }
 }
@@ -44,18 +42,18 @@ class BlackJackTest extends BlackJack {
   assert.strictEqual(BlackJack.getBalance(instance.hands['player3']), 20);
   assert.strictEqual(BlackJack.getBalance(instance.hands['player4']), 8);
   assert.strictEqual(instance.getCurrentPlayer(), 'player1');
-  assert.deepStrictEqual(instance.hit(), { card: new Card(2, CardSuit.Spade), balance: 20, result: undefined });
+  assert.deepStrictEqual(instance.testHit(), { card: new Card(2, CardSuit.Spade), balance: 20, result: undefined });
   assert.strictEqual(instance.getCurrentPlayer(), 'player1');
   // bust
-  assert.deepStrictEqual(instance.hit(), { card: new Card(10, CardSuit.Spade), balance: 30, result: undefined });
+  assert.deepStrictEqual(instance.testHit(), { card: new Card(10, CardSuit.Spade), balance: 30, result: undefined });
   // skip blackjacked player2
   assert.strictEqual(instance.getCurrentPlayer(), 'player3');
   // overflow Ace from 11 to 1
-  assert.deepStrictEqual(instance.hit(), { card: new Card(5, CardSuit.Spade), balance: 15, result: undefined });
+  assert.deepStrictEqual(instance.testHit(), { card: new Card(5, CardSuit.Spade), balance: 15, result: undefined });
   assert.strictEqual(instance.getCurrentPlayer(), 'player3');
-  assert.deepStrictEqual(instance.stand(), { balance: 15, result: undefined });
+  assert.deepStrictEqual(instance.testStand(), { balance: 15, result: undefined });
   assert.strictEqual(instance.getCurrentPlayer(), 'player4');
-  assert.deepStrictEqual(instance.stand(), { balance: 8, result: { ranking: [['player2'], ['player3'], ['player4'], ['player1']] } });
+  assert.deepStrictEqual(instance.testStand(), { balance: 8, result: { ranking: [['player2'], ['player3'], ['player4'], ['player1']] } });
 }
 
 // Test duels
@@ -74,7 +72,7 @@ class BlackJackTest extends BlackJack {
   assert.strictEqual(BlackJack.getBalance(instance.hands['player2']), 18);
   assert.strictEqual(instance.getCurrentPlayer(), 'player1');
   // bust
-  assert.deepStrictEqual(instance.hit(), {
+  assert.deepStrictEqual(instance.testHit(), {
     card: new Card(4, CardSuit.Spade),
     balance: 22,
     result: { ranking: [['player2'], ['player1']] }
@@ -96,7 +94,7 @@ class BlackJackTest extends BlackJack {
   assert.strictEqual(BlackJack.getBalance(instance.hands['player2']), 18);
   assert.strictEqual(instance.getCurrentPlayer(), 'player1');
   // 21
-  assert.deepStrictEqual(instance.hit(), {
+  assert.deepStrictEqual(instance.testHit(), {
     card: new Card(3, CardSuit.Spade),
     balance: 21,
     result: { ranking: [['player1'], ['player2']] }
@@ -118,13 +116,13 @@ class BlackJackTest extends BlackJack {
   assert.strictEqual(BlackJack.getBalance(instance.hands['player2']), 18);
   assert.strictEqual(instance.getCurrentPlayer(), 'player1');
   // stand
-  assert.deepStrictEqual(instance.stand(), {
+  assert.deepStrictEqual(instance.testStand(), {
     balance: 18,
     result: undefined
   });
   assert.strictEqual(instance.getCurrentPlayer(), 'player2');
   // stand, tie
-  assert.deepStrictEqual(instance.stand(), {
+  assert.deepStrictEqual(instance.testStand(), {
     balance: 18,
     result: { ranking: [['player1', 'player2']] }
   });
@@ -145,13 +143,13 @@ class BlackJackTest extends BlackJack {
   assert.strictEqual(BlackJack.getBalance(instance.hands['player2']), 19);
   assert.strictEqual(instance.getCurrentPlayer(), 'player1');
   // stand
-  assert.deepStrictEqual(instance.stand(), {
+  assert.deepStrictEqual(instance.testStand(), {
     balance: 18,
     result: undefined
   });
   assert.strictEqual(instance.getCurrentPlayer(), 'player2');
   // stand, tie
-  assert.deepStrictEqual(instance.stand(), {
+  assert.deepStrictEqual(instance.testStand(), {
     balance: 19,
     result: { ranking: [['player2'], ['player1']] }
   });
@@ -187,13 +185,13 @@ class BlackJackTest extends BlackJack {
   assert.strictEqual(BlackJack.getBalance(instance.hands['player2']), 19);
   assert.strictEqual(instance.getCurrentPlayer(), 'player1');
   // overflow ace -> 1
-  assert.deepStrictEqual(instance.hit(), {
+  assert.deepStrictEqual(instance.testHit(), {
     card: new Card(1, CardSuit.Spade),
     balance: 13,
     result: undefined
   });
   // overflow another ace -> 1
-  assert.deepStrictEqual(instance.hit(), {
+  assert.deepStrictEqual(instance.testHit(), {
     card: new Card(1, CardSuit.Heart),
     balance: 14,
     result: undefined

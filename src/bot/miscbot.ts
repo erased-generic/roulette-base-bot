@@ -25,7 +25,7 @@ class PrintTextAction implements MiscAction {
   }
 }
 
-class MiscBot extends BotBase implements Bot {
+class MiscBot extends BotBase {
   static readonly actions: { [key: string]: MiscAction } = {
     hydrate: new PrintTextAction(10, "Hydrate", "A friendly reminder to hydrate!"),
     stretch: new PrintTextAction(10, "Stretch", "A friendly reminder to stretch!"),

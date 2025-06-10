@@ -1,3 +1,5 @@
+import { Trie } from "./trie";
+
 export {
   ChatContext,
   BotHandler,
@@ -15,8 +17,6 @@ export {
   GameBrain,
   RejectingBrain
 };
-
-import { UserData } from "./userdata";
 
 interface ChatContext {
   username?: string;
@@ -38,6 +38,7 @@ interface BotContext {
 
 interface Bot {
   readonly handlers: { [key: string]: BotHandler };
+  handlersTrie: Trie<string, BotHandler>;
 
   onHandlerCalled(context: ChatContext, args: string[]): void;
   getContext(): BotContext;
@@ -53,7 +54,16 @@ function selectHandler(bot: Bot, command: string): { handler?: BotHandler, key: 
   }
   const args = splitCommand(command);
   const key = args[0].substring(bot.getContext().cmdMarker.length);
-  return { handler: bot.handlers[key], key, args };
+  const handlers: [string, BotHandler][] = [];
+  bot.handlersTrie.visit(key, (path, value) => {
+    const cmd = path.join("");
+    handlers.push([path.join(""), value]);
+    return cmd !== key;  // Stop at exact match
+  });
+  if (handlers.length !== 1) {
+    return { key, args };
+  }
+  return { handler: handlers[0][1], key: handlers[0][0], args };
 }
 
 function callHandler(bot: Bot, handler: BotHandler, context: ChatContext, args: string[]): string | undefined {
@@ -64,25 +74,38 @@ function callHandler(bot: Bot, handler: BotHandler, context: ChatContext, args: 
 
 function composeBots(bots: Bot[]): Bot {
   const ctx = bots[0].getContext();
-  let bot: Bot = {
-    handlers: {
-      ...bots.reduce((acc, bot) => ({ ...acc, ...bot.handlers }), {}),
-      "help": {
-        action: (context, args) => {
-          if (args.length > 1) {
-            const key = args[1];
-            if (key in bot.handlers) {
-              return `${ctx.cmdMarker}${key}: ${bot.handlers[key].description}. Format: ${ctx.cmdMarker}${key} ${bot.handlers[key].format}`;
-            } else {
-              return `${ctx.cmdMarker}${key} is not a valid command.`
-            }
+  const handlers = {
+    ...bots.reduce((acc, bot) => ({ ...acc, ...bot.handlers }), {}),
+    help: {
+      action: (context: ChatContext, args: string[]) => {
+        const handlers: [string, BotHandler][] = [];
+        const key = args.length > 1 ? args[1] : "";
+        let cmds = "";
+        let desc = "";
+        bot.handlersTrie.visit(key, (path, handler) => {
+          const cmd = path.join("");
+          handlers.push([cmd, handler]);
+          if (cmd === key) {
+            desc = `${ctx.cmdMarker}${cmd}: ${handler.description}. Format: ${ctx.cmdMarker}${key} ${handler.format}`;
           }
-          return `Available commands: ${Object.keys(bot.handlers).map(x => `${ctx.cmdMarker}${x}`).join(", ")}`;
-        },
-        description: "List available commands or describe a command",
-        format: "[<command name>]"
-      }
+          return true;
+        });
+        if (handlers.length === 0) {
+          return `${ctx.cmdMarker}${key} is not a valid command.`;
+        } else if (handlers.length > 1) {
+          cmds = `Available commands: ${handlers
+            .map((x) => `${ctx.cmdMarker}${x[0]}`)
+            .join(", ")}${desc ? ".\n" : ""}`;
+        }
+        return cmds + desc;
+      },
+      description: "List available commands or describe a command",
+      format: "[<command name>]",
     },
+  };
+  let bot: Bot = {
+    handlers,
+    handlersTrie: new Trie<string, BotHandler>(Object.entries(handlers)),
     onHandlerCalled(context, args) {
       for (const bot of bots) {
         bot.onHandlerCalled(context, args);

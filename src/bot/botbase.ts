@@ -11,9 +11,10 @@ export {
 };
 
 import { FileUserData, MemoryUserData, UserData, UserDatum } from "../util/userdata";
-import { Bot, BotContext, ChatContext, composeBots } from "../util/interfaces";
+import { Bot, BotContext, BotHandler, ChatContext, composeBots } from "../util/interfaces";
 import { RouletteBase } from "../util/roulette";
 import Fraction from "fraction.js";
+import { Trie } from "../util/trie";
 
 interface PerUserData extends UserDatum {
   balance: number;
@@ -50,8 +51,19 @@ class BotBaseContext implements BotContext {
   }
 }
 
-abstract class BotBase {
+abstract class BotBase implements Bot {
   readonly botContext: BotBaseContext;
+  abstract handlers: { [key: string]: BotHandler; };
+  private _handlersTrie?: Trie<string, BotHandler>;
+  public get handlersTrie(): Trie<string, BotHandler> {
+    if (!this._handlersTrie) {
+      this._handlersTrie = new Trie<string, BotHandler>(
+        Object.entries(this.handlers)
+      );
+    }
+    return this._handlersTrie;
+  }
+
   constructor(botContext: BotBaseContext) {
     this.botContext = botContext;
     botContext.userData.update(
@@ -61,6 +73,8 @@ abstract class BotBase {
       }
     );
   }
+
+  abstract onHandlerCalled(context: ChatContext, args: string[]): void;
 
   getContext(): BotContext {
     return this.botContext;
@@ -234,7 +248,7 @@ abstract class BotBase {
   }
 }
 
-class UsernameUpdaterBot extends BotBase implements Bot {
+class UsernameUpdaterBot extends BotBase {
   handlers: {};
 
   constructor(botContext: BotBaseContext) {

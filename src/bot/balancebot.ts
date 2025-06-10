@@ -4,7 +4,7 @@ import { UserData } from "../util/userdata";
 import { Bot, BotContext, BotHandler, ChatContext, formatTime } from "../util/interfaces";
 import { BotBase, BotBaseContext, PerUserData } from "./botbase";
 
-class BalanceBot extends BotBase implements Bot {
+class BalanceBot extends BotBase {
   static readonly CLAIM_SIZE = 100;
   static readonly CLAIM_COOLDOWN_MINUTES = 30;
   static readonly CLAIM_TRICKERY_CHANCE_PERCENT = 1;

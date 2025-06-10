@@ -46,7 +46,7 @@ abstract class UserData<T extends UserDatum> {
   abstract writeUserData(): void;
 }
 
-class FileUserData<T> extends UserData<T> {
+class FileUserData<T extends UserDatum> extends UserData<T> {
   readonly filePath: string;
 
   constructor(onReadValue: (userId: string, read: any) => T, filePath: string) {
@@ -69,7 +69,7 @@ class FileUserData<T> extends UserData<T> {
   }
 }
 
-class MemoryUserData<T> extends UserData<T> {
+class MemoryUserData<T extends UserDatum> extends UserData<T> {
   constructor(onReadValue: (userId: string, read: any) => T, init: any) {
     super(onReadValue, () => init);
   }

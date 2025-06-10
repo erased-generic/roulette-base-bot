@@ -1,3 +1,4 @@
+import assert from 'assert';
 import { PredictCommand, PredictionBot } from '../../src/bot/predictionbot';
 import { ChatContext } from '../../src/util/interfaces';
 import { createTestBot, createTestBotContext, createTestUserData, instanceTestHandler, instanceTestParser, setBalanceNoReserved } from './utils';
@@ -12,10 +13,11 @@ function testParser(instance: PredictionBot, command: string, expected: PredictC
 
 const botContext = createTestBotContext();
 const userData = botContext.userData;
-let predict_instance: PredictionBot;
+let predict_instance: PredictionBot | undefined;
 const instance = createTestBot([
   ctx => predict_instance = new PredictionBot(ctx, 100)
 ], botContext);
+assert.ok(predict_instance !== undefined);
 
 testParser(predict_instance, "100 0", {
   predictNumber: 0,

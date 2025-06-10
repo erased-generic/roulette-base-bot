@@ -5,7 +5,7 @@ import { Bot, BotHandler, ChatContext } from "../util/interfaces";
 import { BotBase, BotBaseContext, PerUserData } from "./botbase";
 import * as fs from "fs";
 
-class FunFactsBot extends BotBase implements Bot {
+class FunFactsBot extends BotBase {
   static readonly FACT_PRICE = 333;
   facts: string[];
 

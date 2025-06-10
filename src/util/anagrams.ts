@@ -23,9 +23,9 @@ class Anagrams implements Game {
     an: this.guessAnagram.bind(this),
   };
 
-  readonly anagrams = {};
-  readonly randomizer: () => number = undefined;
-  readonly players: string[] = [];
+  readonly anagrams: { [key: string]: string[] };
+  readonly randomizer: () => number;
+  readonly players: string[];
   readonly scores: { [key: string]: number } = {};
   readonly unguessed: string[] = [];
   readonly hints: { [key: string]: Hint } = {};
@@ -98,7 +98,7 @@ class Anagrams implements Game {
   guessAnagram(player: string, args: string[]): GuessResult {
     const guess = args[1];
     const potentialAnagrams = this.anagrams[guess] || [];
-    const guessedAnagrams = [];
+    const guessedAnagrams: string[] = [];
     for (const anagram of potentialAnagrams) {
       if (this.unguessed.includes(anagram)) {
         this.unguessed.splice(this.unguessed.indexOf(anagram), 1);
@@ -148,7 +148,7 @@ class Anagrams implements Game {
   }
 
   static maskWord(word: string, hintState: HintState): string {
-    let unmaskIndices = [];
+    let unmaskIndices: number[] = [];
     switch (hintState) {
       case HintState.EndsWithTwoMiddle:
         unmaskIndices.push(Math.floor((word.length - 1) / 2) + 1);
@@ -168,7 +168,7 @@ class Anagrams implements Game {
     );
   }
 
-  getHint(args: string[]): { word: string; hint?: string } {
+  getHint(args: string[]): { word: string; hint?: string } | undefined {
     if (this.unguessed.length == 0) {
       return undefined;
     }

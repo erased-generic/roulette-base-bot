@@ -21,7 +21,7 @@ class AnagramsDuelImpl extends DuelImpl<anagramsModule.Anagrams> {
     },
   };
   readonly duelDescription: string = "anagrams duel";
-  readonly gameBrain: GameBrain<anagramsModule.Anagrams>;
+  readonly gameBrain?: GameBrain<anagramsModule.Anagrams>;
   readonly anagrams: { [key: string]: string[] };
   readonly numToGuess: number;
   readonly randomizer: () => number;
@@ -110,6 +110,9 @@ class AnagramsDuelImpl extends DuelImpl<anagramsModule.Anagrams> {
     if (duel && duel instanceof DuelAccepted) {
       const payload: anagramsModule.Anagrams = duel.payload;
       const hint = payload.getHint(args);
+      if (hint === undefined) {
+        return "Hint: you're on your own!";
+      }
       return `Hint: an answer for ${hint.word} looks like ${hint.hint}!`;
     }
     return "No duel - no hint!";

@@ -9,7 +9,10 @@ enum LetterState {
 
 interface GuessResult extends GameMoveResult {
   guess: string;
-  letters?: LetterState[]
+}
+
+interface ValidGuessResult extends GuessResult {
+  letters: LetterState[]
 }
 
 class Wordle implements Game {
@@ -17,12 +20,12 @@ class Wordle implements Game {
     wo: this.guessWord.bind(this),
   };
 
-  readonly validTargets: string[] = [];
-  readonly validGuesses: string[] = [];
-  readonly randomizer: () => number = undefined;
-  readonly players: string[] = [];
+  readonly validTargets: string[];
+  readonly validGuesses: string[];
+  readonly randomizer: () => number;
+  readonly players: string[];
   readonly target: string;
-  readonly history: GuessResult[] = [];
+  readonly history: ValidGuessResult[] = [];
 
   constructor(
     players: string[],
@@ -74,7 +77,6 @@ class Wordle implements Game {
       return {
         result: undefined,
         guess: guess,
-        letters: undefined,
         describe: (context: GameContext): string => {
           return `Not a word: ${guess}`;
         },
@@ -101,7 +103,7 @@ class Wordle implements Game {
         );
         return msg;
       },
-    };
+    } as ValidGuessResult;
   }
 
   static readonly WRONG_LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"];
@@ -109,9 +111,9 @@ class Wordle implements Game {
   static readonly CORRECT_LETTERS = ["🅰", "🅱", "🅲", "🅳", "🅴", "🅵", "🅶", "🅷", "🅸", "🅹", "🅺", "🅻", "🅼", "🅽", "🅾", "🅿", "🆀", "🆁", "🆂", "🆃", "🆄", "🆅", "🆆", "🆇", "🆈", "🆉"];
 
   static renderLetterState(letter: string, state: LetterState): string {
-    const charCode = letter.codePointAt(0);
-    const A_CHAR_CODE = "a".codePointAt(0);
-    const Z_CHAR_CODE = "z".codePointAt(0);
+    const charCode = letter.codePointAt(0)!;
+    const A_CHAR_CODE = "a".codePointAt(0)!;
+    const Z_CHAR_CODE = "z".codePointAt(0)!;
     if (charCode < A_CHAR_CODE || charCode > Z_CHAR_CODE) {
       return letter;
     }

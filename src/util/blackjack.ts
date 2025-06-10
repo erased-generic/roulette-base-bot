@@ -84,7 +84,7 @@ class Deck {
   }
 
   pop(): Card {
-    return this.cards.pop();
+    return this.cards.pop()!;
   }
 }
 

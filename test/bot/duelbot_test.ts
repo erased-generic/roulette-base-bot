@@ -68,6 +68,7 @@ class TestDuelImpl extends DuelImpl<TestGame> {
       format: "",
     }
   };
+  readonly gameBrain?: GameBrain<TestGame> = undefined;
 
   printDuelIntro(bot: DuelBot, duel: DuelAccepted<TestGame>): string {
     return "test duel intro";
@@ -670,7 +671,7 @@ testHandler(
   /maybe another time/
 );
 
-let moves = [];
+let moves: string[] = [];
 const seqBrain = new (class implements GameBrain<BlackJack> {
   requestGame(
     userId: string,
@@ -683,7 +684,7 @@ const seqBrain = new (class implements GameBrain<BlackJack> {
     if (moves.length === 0) {
       return undefined;
     }
-    const move = moves.pop();
+    const move = moves.pop()!;
     return { move, args: [] };
   }
 })();

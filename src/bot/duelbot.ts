@@ -100,7 +100,7 @@ abstract class DuelImpl<T extends Game> {
   abstract handlers: { [key: string]: DuelHandler };
   abstract bindMoves: { [key: string]: DuelMove };
   abstract duelDescription: string;
-  readonly gameBrain?: GameBrain<T>;
+  abstract gameBrain?: GameBrain<T>;
 
   abstract printDuelIntro(
     bot: DuelBot,
@@ -131,7 +131,7 @@ abstract class DuelImpl<T extends Game> {
   ): T;
 }
 
-class DuelBot extends BotBase implements Bot {
+class DuelBot extends BotBase {
   readonly duels: { [key: string]: DuelInfo } = {};
   readonly playerShuffleChance: number;
   readonly duelImpls: { [key: string]: DuelImpl<Game> };
@@ -240,7 +240,7 @@ class DuelBot extends BotBase implements Bot {
   }
 
   duelHandler(context: ChatContext, args: string[]): string | undefined {
-    const username = context["username"];
+    const username = context["username"]!;
     const duelCommand = DuelBot.parseDuelCommand(args, Object.keys(this.duelImpls));
     if (typeof duelCommand === "string") {
       return `Parse error: ${duelCommand}, try %{format}, ${username}!`;
@@ -700,7 +700,7 @@ class DuelBot extends BotBase implements Bot {
     const username = context["username"];
     let msg = `${username}, you are participating in: `;
     let metAccepted = false;
-    let msgs = [];
+    let msgs: string[] = [];
     for (const duel of Object.values(this.duels)) {
       if (duel instanceof DuelRendezvous) {
         const duelImpl = this.duelImpls[duel.duelName];

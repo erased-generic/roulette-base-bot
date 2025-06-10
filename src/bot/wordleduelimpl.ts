@@ -15,7 +15,7 @@ class WordleDuelImpl extends DuelImpl<wordleModule.Wordle> {
     },
   };
   readonly duelDescription: string = "wordle duel";
-  readonly gameBrain: GameBrain<wordleModule.Wordle>;
+  readonly gameBrain?: GameBrain<wordleModule.Wordle>;
   readonly validWordleTargets: string[] = [];
   readonly validWordleGuesses: string[] = [];
   readonly randomizer: () => number;

@@ -63,14 +63,15 @@ function instanceTestHandler(
   expected: RegExp
 ): string {
   const selected = selectHandler(botInstance, command);
-  assert.notStrictEqual(selected, undefined);
-  assert.notStrictEqual(selected.handler, undefined);
+  assert.ok(selected !== undefined);
+  assert.ok(selected.handler !== undefined);
   const result = callHandler(
     botInstance,
     selected.handler,
     chatContext,
     selected.args
   );
+  assert.ok(result !== undefined);
   assert.match(result, expected);
   return result;
 }

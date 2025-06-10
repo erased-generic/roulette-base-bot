@@ -11,7 +11,7 @@ interface PredictCommand {
   amount: number;
 }
 
-class PredictionBot extends BotBase implements Bot {
+class PredictionBot extends BotBase {
   readonly handlers: { [key: string]: BotHandler } = {
     predict: {
       action: this.predictHandler.bind(this),

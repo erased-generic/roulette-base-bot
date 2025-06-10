@@ -2,6 +2,7 @@ import './util/roulette_test';
 import './util/blackjack_test';
 import './util/anagrams_test';
 import './util/wordle_test';
+import './util/trie_test';
 import './bot/balancebot_test';
 import './bot/roulettebot_test';
 import './bot/predictionbot_test';
