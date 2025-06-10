@@ -118,3 +118,27 @@ function toLetters(...arr: number[]): LetterState[] {
     result: { ranking: [["player1"], ["player2"]] },
   });
 }
+
+// test non-trivial coloring
+// basic test
+{
+  const validGuesses = ['clamp', 'colly', 'clloy'];
+  function randomizer() {
+    return 0;
+  }
+  let instance = new WordleTest(['player1', 'player2'], validGuesses, validGuesses, 0, randomizer);
+  assert.strictEqual(instance.init(), undefined);
+  assert.deepStrictEqual(instance.target, 'clamp');
+  assert.deepStrictEqual(instance.testGuessWord("player1", ["colly"]), {
+    guess: "colly",
+    // color in only the first 'l'
+    letters: toLetters(2, 0, 1, 0, 0),
+    result: undefined
+  });
+  assert.deepStrictEqual(instance.testGuessWord("player1", ["clloy"]), {
+    guess: "clloy",
+    // color in only the first 'l'
+    letters: toLetters(2, 2, 0, 0, 0),
+    result: undefined
+  });
+}

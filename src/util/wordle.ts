@@ -58,16 +58,26 @@ class Wordle implements Game {
     guess: string,
     target: string
   ): LetterState[] {
-    const states: LetterState[] = [];
+    const states: LetterState[] = new Array(guess.length).fill(
+      LetterState.Wrong
+    );
+    const unmatched: string[] = [];
     for (let i = 0; i < guess.length; i++) {
       if (guess[i] === target[i]) {
-        states.push(LetterState.Correct);
-      } else if (target.includes(guess[i])) {
-        states.push(LetterState.WrongPosition);
+        states[i] = LetterState.Correct;
       } else {
-        states.push(LetterState.Wrong);
+        unmatched.push(target[i]);
       }
     }
+    for (let i = 0; i < guess.length; i++) {
+      if (states[i] === LetterState.Wrong) {
+        if (unmatched.includes(guess[i])) {
+          states[i] = LetterState.WrongPosition;
+          unmatched.splice(unmatched.indexOf(guess[i]), 1);
+        }
+      }
+    }
+
     return states;
   }
 
