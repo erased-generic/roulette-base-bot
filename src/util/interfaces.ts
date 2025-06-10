@@ -80,19 +80,29 @@ function composeBots(bots: Bot[]): Bot {
       action: (context: ChatContext, args: string[]) => {
         const handlers: [string, BotHandler][] = [];
         const key = args.length > 1 ? args[1] : "";
-        let cmds = "";
-        let desc = "";
+        let exactMatch = false;
+        let cmds = ""; // list commands when multiple matches are found
+        let desc: string | undefined = undefined; // describe the command, if there's an exact match or only one match
         bot.handlersTrie.visit(key, (path, handler) => {
           const cmd = path.join("");
-          handlers.push([cmd, handler]);
           if (cmd === key) {
+            exactMatch = true;
+          }
+          handlers.push([cmd, handler]);
+          if (desc === undefined) {
+            // fill in first match
             desc = `${ctx.cmdMarker}${cmd}: ${handler.description}. Format: ${ctx.cmdMarker}${key} ${handler.format}`;
+          } else if (!exactMatch) {
+            // no exact match and more than one match => skip description
+            desc = "";
           }
           return true;
         });
+
         if (handlers.length === 0) {
           return `${ctx.cmdMarker}${key} is not a valid command.`;
         } else if (handlers.length > 1) {
+          // more than one match => list commands
           cmds = `Available commands: ${handlers
             .map((x) => `${ctx.cmdMarker}${x[0]}`)
             .join(", ")}${desc ? ".\n" : ""}`;
