@@ -1,9 +1,15 @@
 export { PredictCommand, PredictionBot };
 
 import * as rouletteModule from "../util/roulette";
-import { UserData } from "../util/userdata";
-import { Bot, BotHandler, ChatContext } from "../util/interfaces";
-import { PerUserData, BotBase, BotBaseContext } from "./botbase";
+import {
+  BotHandler,
+  ChatContext,
+  ConfigFromGet,
+  ConfigName,
+  Configurable,
+  noDefaultValue,
+} from "../util/interfaces";
+import { BotBase, baseBotConfig } from "./botbase";
 import Fraction from "fraction.js";
 
 interface PredictCommand {
@@ -11,7 +17,14 @@ interface PredictCommand {
   amount: number;
 }
 
-class PredictionBot extends BotBase {
+function predictionBotConfig() {
+  return baseBotConfig({
+    n: noDefaultValue(Number),
+  });
+}
+
+@ConfigName("PredictionBot", predictionBotConfig)
+class PredictionBot extends BotBase implements Configurable {
   readonly handlers: { [key: string]: BotHandler } = {
     predict: {
       action: this.predictHandler.bind(this),
@@ -54,10 +67,10 @@ class PredictionBot extends BotBase {
   readonly prediction: rouletteModule.Prediction;
   predictionOpen = false;
 
-  constructor(botContext: BotBaseContext, n: number) {
-    super(botContext);
-    this.n_places = n;
-    this.all_places = rouletteModule.RouletteBase.getAllNumbers(n);
+  constructor(config: ConfigFromGet<typeof predictionBotConfig>) {
+    super(config);
+    this.n_places = config.n.valueOf();
+    this.all_places = rouletteModule.RouletteBase.getAllNumbers(this.n_places);
     this.prediction = new rouletteModule.Prediction(this.n_places);
   }
 

@@ -1,0 +1,9 @@
+import './anagramsduelimpl';
+import './balancebot';
+import './blackjackduelimpl';
+import './duelbot';
+import './funfactsbot';
+import './miscbot';
+import './predictionbot';
+import './roulettebot';
+import './wordleduelimpl';

@@ -9,7 +9,7 @@ import {
 // Test the bot itself
 const botContext = createTestBotContext();
 const userData = botContext.userData;
-const instance = createTestBot([], botContext);
+const instance = createTestBot([], { botContext: botContext });
 const testChatContext = { username: "test", "user-id": "test", mod: false };
 
 function testHandler(context: ChatContext, command: string, expected: RegExp) {

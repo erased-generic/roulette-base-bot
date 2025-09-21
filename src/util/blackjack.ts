@@ -1,10 +1,9 @@
 import {
   Game,
-  GameBrain,
   GameContext,
   GameMoveResult,
   GameResult,
-  RejectingBrain
+  RejectingBrain,
 } from "./interfaces";
 export { CardSuit, Card, Deck, Moves, BlackJack, BlackJackBrain };
 
@@ -259,10 +258,7 @@ class BlackJack implements Game {
   }
 }
 
-class BlackJackBrain
-  extends RejectingBrain<BlackJack>
-  implements GameBrain<BlackJack>
-{
+class BlackJackBrain extends RejectingBrain<BlackJack> {
   constructor(chance: number = 0) {
     super(chance);
   }

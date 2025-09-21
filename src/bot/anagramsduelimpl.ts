@@ -1,12 +1,40 @@
 import * as anagramsModule from "../util/anagrams";
-import { ChatContext, GameBrain, GameResult } from "../util/interfaces";
+import {
+  ChatContext,
+  ConfigFromGet,
+  ConfigName,
+  Configurable,
+  GameBrain,
+  GameResult,
+  noDefaultValue,
+  optionalValue,
+} from "../util/interfaces";
 import { BotBase } from "./botbase";
-import { DuelBot, DuelAccepted, DuelImpl, DuelMove, DuelHandler } from "./duelbot";
+import {
+  DuelBot,
+  DuelAccepted,
+  DuelImpl,
+  DuelHandler,
+} from "./duelbot";
 import * as fs from "fs";
 
-export { AnagramsDuelImpl };
+export { anagramsDuelImplConfig, AnagramsDuelImpl };
 
-class AnagramsDuelImpl extends DuelImpl<anagramsModule.Anagrams> {
+function anagramsDuelImplConfig() {
+  return {
+    anagrams: noDefaultValue(String),
+    anagramsIsFile: true,
+    numToGuess: 5,
+    gameBrain: optionalValue(GameBrain<anagramsModule.Anagrams>),
+    randomizer: () => Math.random(),
+  };
+}
+
+@ConfigName("AnagramsDuelImpl", anagramsDuelImplConfig)
+class AnagramsDuelImpl
+  extends DuelImpl<anagramsModule.Anagrams>
+  implements Configurable
+{
   readonly handlers: { [key: string]: DuelHandler } = {
     hint: {
       action: this.getHint.bind(this),
@@ -27,21 +55,15 @@ class AnagramsDuelImpl extends DuelImpl<anagramsModule.Anagrams> {
   readonly numToGuess: number;
   readonly randomizer: () => number;
 
-  constructor(
-    anagrams: string | { [key: string]: string[] },
-    numToGuess: number = 5,
-    gameBrain: GameBrain<anagramsModule.Anagrams> | undefined = undefined,
-    randomizer: () => number = () => Math.random()
-  ) {
+  constructor(config: ConfigFromGet<typeof anagramsDuelImplConfig>) {
     super();
-    if (typeof anagrams === "string") {
-      this.anagrams = JSON.parse(fs.readFileSync(anagrams).toString());
-    } else {
-      this.anagrams = anagrams;
-    }
-    this.numToGuess = numToGuess;
-    this.gameBrain = gameBrain;
-    this.randomizer = randomizer;
+    const anagramsJSON = config.anagramsIsFile
+      ? fs.readFileSync(config.anagrams.valueOf()).toString()
+      : config.anagrams.valueOf();
+    this.anagrams = JSON.parse(anagramsJSON);
+    this.numToGuess = config.numToGuess;
+    this.gameBrain = config.gameBrain;
+    this.randomizer = config.randomizer;
   }
 
   override printDuelIntro(

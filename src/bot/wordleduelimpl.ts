@@ -1,21 +1,45 @@
 import * as wordleModule from "../util/wordle";
-import { GameBrain, GameResult, RejectingBrain } from "../util/interfaces";
+import {
+  ConfigFromGet,
+  ConfigName,
+  Configurable,
+  GameBrain,
+  GameResult,
+  noDefaultValue,
+  RejectingBrain,
+} from "../util/interfaces";
 import { BotBase } from "./botbase";
-import { DuelBot, DuelAccepted, DuelImpl, DuelMove, DuelHandler } from "./duelbot";
+import {
+  DuelBot,
+  DuelAccepted,
+  DuelImpl,
+  DuelHandler,
+} from "./duelbot";
 import * as fs from "fs";
 
-export { DoNothingBrain, WordleDuelImpl };
+export { DoNothingBrain, wordleDuelImplConfig, WordleDuelImpl };
 
-class DoNothingBrain
-  extends RejectingBrain<wordleModule.Wordle>
-  implements GameBrain<wordleModule.Wordle>
-{
+class DoNothingBrain extends RejectingBrain<wordleModule.Wordle> {
   constructor(chance: number = 0) {
     super(chance);
   }
 }
 
-class WordleDuelImpl extends DuelImpl<wordleModule.Wordle> {
+function wordleDuelImplConfig() {
+  return {
+    validWordleTargets: noDefaultValue(String),
+    validWordleGuesses: noDefaultValue(String),
+    validWordleDataIsFile: true,
+    gameBrain: new DoNothingBrain(0.1) as GameBrain<wordleModule.Wordle>,
+    randomizer: () => Math.random(),
+  };
+}
+
+@ConfigName("WordleDuelImpl", wordleDuelImplConfig)
+class WordleDuelImpl
+  extends DuelImpl<wordleModule.Wordle>
+  implements Configurable
+{
   readonly handlers: { [key: string]: DuelHandler } = {};
   readonly bindMoves = {
     wordleGuess: {
@@ -29,31 +53,21 @@ class WordleDuelImpl extends DuelImpl<wordleModule.Wordle> {
   readonly validWordleGuesses: string[] = [];
   readonly randomizer: () => number;
 
-  constructor(
-    validWordleTargets: string | string[],
-    validWordleGuesses: string | string[],
-    gameBrain:
-      | GameBrain<wordleModule.Wordle>
-      | undefined = new DoNothingBrain(0.1),
-    randomizer: () => number = () => Math.random()
-  ) {
+  constructor(config: ConfigFromGet<typeof wordleDuelImplConfig>) {
     super();
-    if (typeof validWordleTargets === "string") {
+    if (config.validWordleDataIsFile) {
       this.validWordleTargets = JSON.parse(
-        fs.readFileSync(validWordleTargets).toString()
+        fs.readFileSync(config.validWordleTargets.valueOf()).toString()
       );
-    } else {
-      this.validWordleTargets = validWordleTargets;
-    }
-    if (typeof validWordleGuesses === "string") {
       this.validWordleGuesses = JSON.parse(
-        fs.readFileSync(validWordleGuesses).toString()
+        fs.readFileSync(config.validWordleGuesses.valueOf()).toString()
       );
     } else {
-      this.validWordleGuesses = validWordleGuesses;
+      this.validWordleTargets = JSON.parse(config.validWordleTargets.valueOf());
+      this.validWordleGuesses = JSON.parse(config.validWordleGuesses.valueOf());
     }
-    this.gameBrain = gameBrain;
-    this.randomizer = randomizer;
+    this.gameBrain = config.gameBrain;
+    this.randomizer = config.randomizer;
   }
 
   override printDuelIntro(

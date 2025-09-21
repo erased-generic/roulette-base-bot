@@ -1,12 +1,34 @@
 import * as blackjackModule from "../util/blackjack";
-import { UserData } from "../util/userdata";
-import { Bot, BotHandler, GameBrain, GameResult } from "../util/interfaces";
-import { BotBase, BotBaseContext, PerUserData } from "./botbase";
-import { DuelBot, DuelAccepted, DuelImpl, DuelMove, DuelHandler } from "./duelbot";
+import {
+  ConfigFromGet,
+  ConfigName,
+  Configurable,
+  GameBrain,
+  GameResult,
+} from "../util/interfaces";
+import { BotBase } from "./botbase";
+import {
+  DuelBot,
+  DuelAccepted,
+  DuelImpl,
+} from "./duelbot";
 
-export { BlackJackDuelImpl };
+export { blackJackDuelImplConfig, BlackJackDuelImpl };
 
-class BlackJackDuelImpl extends DuelImpl<blackjackModule.BlackJack> {
+function blackJackDuelImplConfig() {
+  return {
+    deckGenerator: BlackJackDuelImpl.shuffledDeckGenerator,
+    gameBrain: new blackjackModule.BlackJackBrain(
+      0.1
+    ) as GameBrain<blackjackModule.BlackJack>,
+  };
+}
+
+@ConfigName("BlackJackDuelImpl", blackJackDuelImplConfig)
+class BlackJackDuelImpl
+  extends DuelImpl<blackjackModule.BlackJack>
+  implements Configurable
+{
   readonly handlers = {};
   readonly bindMoves = {
     hitBJ: {
@@ -28,15 +50,10 @@ class BlackJackDuelImpl extends DuelImpl<blackjackModule.BlackJack> {
     return deck;
   }
 
-  constructor(
-    deckGenerator: () => blackjackModule.Deck = BlackJackDuelImpl.shuffledDeckGenerator,
-    gameBrain:
-      | GameBrain<blackjackModule.BlackJack>
-      | undefined = new blackjackModule.BlackJackBrain(0.1)
-  ) {
+  constructor(config: ConfigFromGet<typeof blackJackDuelImplConfig>) {
     super();
-    this.deckGenerator = deckGenerator;
-    this.gameBrain = gameBrain;
+    this.deckGenerator = config.deckGenerator;
+    this.gameBrain = config.gameBrain;
   }
 
   override printDuelIntro(

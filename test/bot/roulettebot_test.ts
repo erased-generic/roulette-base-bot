@@ -2,8 +2,7 @@ import { BetCommand, RouletteBot } from "../../src/bot/roulettebot";
 import { ChatContext } from "../../src/util/interfaces";
 import {
   createTestBot,
-  createTestBotContext,
-  createTestUserData,
+  createTestBotConfig,
   instanceTestHandler,
   instanceTestParser,
   setBalanceNoReserved,
@@ -268,9 +267,9 @@ testParser("100 0-36", {
 });
 
 // Test the bot itself
-const botContext = createTestBotContext();
-const userData = botContext.userData;
-const instance = createTestBot([(ctx) => new RouletteBot(ctx)], botContext);
+const config = createTestBotConfig();
+const userData = config.botContext.userData;
+const instance = createTestBot([new RouletteBot(config)], config);
 const testChatContext = { username: "test", "user-id": "test", mod: false };
 
 function testHandler(
@@ -346,7 +345,7 @@ testHandler(testChatContext, "!unbet", /not betting anymore/);
 testHandler(testChatContext, "!balance", /You have 100 points,/);
 for (let i = 0; i < 10; i++) {
   setBalanceNoReserved(userData, "test", 100);
-  setBalanceNoReserved(userData, botContext.botUsername, 0);
+  setBalanceNoReserved(userData, config.botContext.botUsername, 0);
   testHandler(testChatContext, "!bet 50 odd", /placed a bet of 50 on odd/);
   const msg = testHandler(
     testChatContext,

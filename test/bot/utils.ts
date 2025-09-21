@@ -2,6 +2,7 @@ export {
   instanceTestHandler,
   createTestUserData,
   createTestBotContext,
+  createTestBotConfig,
   createTestBot,
   splitCommand,
   instanceTestParser,
@@ -13,35 +14,44 @@ import * as assert from "assert";
 import {
   Bot,
   ChatContext,
+  ConfigFromGet,
   callHandler,
+  composeBots,
   selectHandler,
   splitCommand,
 } from "../../src/util/interfaces";
 import {
   BotBaseContext,
   PerUserData,
-  composeBotsWithUsernameUpdater,
+  UsernameUpdaterBot,
+  concreteBaseBotConfig,
   onReadUserData,
 } from "../../src/bot/botbase";
 import { MemoryUserData, UserData } from "../../src/util/userdata";
-import { BalanceBot } from "../../src/bot/balancebot";
+import { BalanceBot, balanceBotConfig } from "../../src/bot/balancebot";
 
 function createTestUserData() {
   return new MemoryUserData<PerUserData>(onReadUserData, {});
 }
 
 function createTestBotContext() {
-  return new BotBaseContext("!", "testbot", createTestUserData());
+  return new BotBaseContext({ cmdMarker: "!", botUsername: "testbot", userData: createTestUserData() });
+}
+
+function createTestBotConfig() {
+  return { botContext: createTestBotContext() };
 }
 
 function createTestBot(
-  bots: ((botContext: BotBaseContext) => Bot)[],
-  botContext: BotBaseContext
+  bots: Bot[],
+  config: ConfigFromGet<typeof balanceBotConfig> &
+    ConfigFromGet<typeof concreteBaseBotConfig>
 ) {
-  return composeBotsWithUsernameUpdater(
-    [(ctx) => new BalanceBot(ctx), ...bots],
-    botContext
-  );
+  return composeBots([
+    new BalanceBot(config),
+    new UsernameUpdaterBot(config),
+    ...bots,
+  ]);
 }
 
 function instanceTestParser<T>(

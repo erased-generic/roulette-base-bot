@@ -1,11 +1,14 @@
-import { DuelCommand, DuelBot, DuelAccepted, DuelImpl, DuelMove } from "../../src/bot/duelbot";
+import {
+  DuelCommand,
+  DuelBot,
+  DuelAccepted,
+  DuelImpl,
+} from "../../src/bot/duelbot";
 import { BlackJackDuelImpl } from "../../src/bot/blackjackduelimpl";
 import {
-  BotHandler,
   ChatContext,
   Game,
   GameBrain,
-  GameMoveResult,
   GameResult,
 } from "../../src/util/interfaces";
 import {
@@ -18,8 +21,7 @@ import {
 } from "../../src/util/blackjack";
 import {
   createTestBot,
-  createTestBotContext,
-  createTestUserData,
+  createTestBotConfig,
   instanceTestHandler,
   instanceTestParser,
   setBalanceNoReserved,
@@ -28,7 +30,10 @@ import { AnagramsDuelImpl } from "../../src/bot/anagramsduelimpl";
 import { DoNothingBrain, WordleDuelImpl } from "../../src/bot/wordleduelimpl";
 
 function parse(args: string[]) {
-  return DuelBot.parseDuelCommand(["", ...args], ["testduelname", "testduelname2"]);
+  return DuelBot.parseDuelCommand(
+    ["", ...args],
+    ["testduelname", "testduelname2"]
+  );
 }
 
 function testParser(command: string, expected: DuelCommand | undefined) {
@@ -66,7 +71,7 @@ class TestDuelImpl extends DuelImpl<TestGame> {
     nop: {
       description: "nop",
       format: "",
-    }
+    },
   };
   readonly gameBrain?: GameBrain<TestGame> = undefined;
 
@@ -105,16 +110,20 @@ class TestDuelImpl extends DuelImpl<TestGame> {
  */
 
 // first, test rendezvous mechanism
-const botContext = createTestBotContext();
-const userData = botContext.userData;
+const config = createTestBotConfig();
+const userData = config.botContext.userData;
 const myDeck = new Deck();
 let instance = createTestBot(
   [
-    (ctx) => new DuelBot(ctx, 0, { // don't shuffle players
-      "testduelname": new TestDuelImpl(),
+    new DuelBot({
+      ...config,
+      playerShuffleChance: 0, // don't shuffle players
+      duelImpls: {
+        testduelname: new TestDuelImpl(),
+      },
     }),
   ],
-  botContext
+  config
 );
 
 testParser("100 aaa", {
@@ -182,16 +191,8 @@ testHandler(
 );
 testHandler(aChatContext, "!check", /a, you're not in any duel/);
 testHandler(bChatContext, "!check", /b, you're not in any duel/);
-testHandler(
-  aChatContext,
-  "!unduel",
-  /a retracted all their duel requests/
-);
-testHandler(
-  bChatContext,
-  "!unduel",
-  /b retracted all their duel requests/
-);
+testHandler(aChatContext, "!unduel", /a retracted all their duel requests/);
+testHandler(bChatContext, "!unduel", /b retracted all their duel requests/);
 testHandler(aChatContext, "!duel 1000 b", /You don't have that many points/);
 testHandler(
   aChatContext,
@@ -229,11 +230,7 @@ testHandler(
 );
 
 // test that we can duel all-in even if we have 0 points
-testHandler(
-  aChatContext,
-  "!unduel",
-  /a retracted all their duel requests/
-);
+testHandler(aChatContext, "!unduel", /a retracted all their duel requests/);
 setBalanceNoReserved(userData, "a", 0);
 testHandler(
   aChatContext,
@@ -242,11 +239,7 @@ testHandler(
 );
 
 // test that you go all-in if you don't have enough points for accepting the duel
-testHandler(
-  aChatContext,
-  "!unduel",
-  /a retracted all their duel requests/
-);
+testHandler(aChatContext, "!unduel", /a retracted all their duel requests/);
 setBalanceNoReserved(userData, "a", 10);
 testHandler(
   bChatContext,
@@ -262,12 +255,18 @@ testHandler(aChatContext, "!unduel", /a forfeits the test duel/);
 myDeck.cards = new Deck().cards;
 instance = createTestBot(
   [
-    (u) =>
-      new DuelBot(u, 0, {
-        bj: new BlackJackDuelImpl(() => myDeck, new BlackJackBrain(0)), // use this deck interface and don't shuffle players
-      }),
+    new DuelBot({
+      ...config,
+      playerShuffleChance: 0,
+      duelImpls: {
+        bj: new BlackJackDuelImpl({
+          deckGenerator: () => myDeck,
+          gameBrain: new BlackJackBrain(0),
+        }), // use this deck interface and don't shuffle players
+      },
+    }),
   ],
-  botContext
+  config
 );
 setBalanceNoReserved(userData, "a", 100);
 setBalanceNoReserved(userData, "b", 100);
@@ -276,11 +275,7 @@ testHandler(
   "!duel 10 a",
   /a, reply with !accept \[b\] to accept the blackjack duel, if you're ready to bet 10 points!/
 );
-testHandler(
-  cChatContext,
-  "!accept b",
-  /b didn't request a duel with you/
-);
+testHandler(cChatContext, "!accept b", /b didn't request a duel with you/);
 testHandler(
   aChatContext,
   "!accept",
@@ -372,21 +367,13 @@ testHandler(
   "!balance",
   /You have 100 points \(currently betted 10 of those\), b!/
 );
-testHandler(
-  bChatContext,
-  "!hit",
-  /b pulls a 2♦, totaling 20! b, your move!/
-);
+testHandler(bChatContext, "!hit", /b pulls a 2♦, totaling 20! b, your move!/);
 testHandler(
   bChatContext,
   "!check",
   /b's hand: 9♦,9♣,2♦, totaling 20;\s+a's hand: 9♠,9♥, totaling 18\.[\s\S]*b, your move!/
 );
-testHandler(
-  bChatContext,
-  "!stand",
-  /b stands with 20\.[\s\S]*a, your move!/
-);
+testHandler(bChatContext, "!stand", /b stands with 20\.[\s\S]*a, your move!/);
 testHandler(
   aChatContext,
   "!hit",
@@ -417,7 +404,7 @@ testHandler(
   "!accept",
   new RegExp(
     "Let the blackjack duel begin[\\s\\S]*" +
-      "b's hand: 10♥,A♥, totaling 21;\\s+a's hand: 9♦,9♣, totaling 18.\[\\s\\S]*" +
+      "b's hand: 10♥,A♥, totaling 21;\\s+a's hand: 9♦,9♣, totaling 18.[\\s\\S]*" +
       "The winner is b;\\s+b won 10 points and now has 110 points;\\s+a lost 10 points and now has 90 points"
   )
 );
@@ -488,20 +475,27 @@ myDeck2.cards = [
 let isFirst = true;
 instance = createTestBot(
   [
-    (u) =>
-      new DuelBot(u, 1, {
-        bj: new BlackJackDuelImpl(() => {
-          if (isFirst) {
-            isFirst = false;
-            return myDeck;
-          } else {
-            return myDeck2;
-          }
-        }, new BlackJackBrain(0)), // use different decks for the two duels, also swap players
-      }),
+    new DuelBot({
+      ...config,
+      playerShuffleChance: 1,
+      duelImpls: {
+        bj: new BlackJackDuelImpl({
+          deckGenerator: () => {
+            if (isFirst) {
+              isFirst = false;
+              return myDeck;
+            } else {
+              return myDeck2;
+            }
+          },
+          gameBrain: new BlackJackBrain(0),
+        }), // use different decks for the two duels, also swap players
+      },
+    }),
   ],
-  botContext
+  config
 );
+
 userData.get("a").balance = 100;
 userData.get("b").balance = 100;
 userData.get("c").balance = 100;
@@ -516,26 +510,10 @@ testHandler(
   "!duel 20 d",
   /d, reply with !accept \[c\] to accept the blackjack duel, if you're ready to bet 20 points!/
 );
-testHandler(
-  dChatContext,
-  "!accept b",
-  /d, b didn't request a duel with you!/
-);
-testHandler(
-  dChatContext,
-  "!accept a",
-  /d, a didn't request a duel with you!/
-);
-testHandler(
-  aChatContext,
-  "!accept d",
-  /a, d didn't request a duel with you!/
-);
-testHandler(
-  aChatContext,
-  "!accept c",
-  /a, c didn't request a duel with you!/
-);
+testHandler(dChatContext, "!accept b", /d, b didn't request a duel with you!/);
+testHandler(dChatContext, "!accept a", /d, a didn't request a duel with you!/);
+testHandler(aChatContext, "!accept d", /a, d didn't request a duel with you!/);
+testHandler(aChatContext, "!accept c", /a, c didn't request a duel with you!/);
 testHandler(
   aChatContext,
   "!rendezvous",
@@ -656,23 +634,23 @@ testHandler(dChatContext, "!balance", /You have 120 points, d!/);
 // check duels with the bot itself
 instance = createTestBot(
   [
-    (u) =>
-      new DuelBot(u, 1, {
-        bj: new BlackJackDuelImpl(() => {
-          return myDeck;
-        }, new BlackJackBrain(1)),
-      }),
+    new DuelBot({
+      ...config,
+      playerShuffleChance: 1,
+      duelImpls: {
+        bj: new BlackJackDuelImpl({
+          deckGenerator: () => myDeck,
+          gameBrain: new BlackJackBrain(1),
+        }),
+      },
+    }),
   ],
-  botContext
+  config
 );
-testHandler(
-  aChatContext,
-  "!duel all testbot",
-  /maybe another time/
-);
+testHandler(aChatContext, "!duel all testbot", /maybe another time/);
 
 let moves: Moves[] = [];
-const seqBrain = new (class implements GameBrain<BlackJack> {
+const seqBrain = new (class extends GameBrain<BlackJack> {
   requestGame(
     userId: string,
     username: string,
@@ -691,14 +669,18 @@ const seqBrain = new (class implements GameBrain<BlackJack> {
 myDeck.cards = new Deck().cards;
 instance = createTestBot(
   [
-    (u) =>
-      new DuelBot(u, 1, {
-        bj: new BlackJackDuelImpl(() => {
-          return myDeck;
-        }, seqBrain),
-      }),
+    new DuelBot({
+      ...config,
+      playerShuffleChance: 1,
+      duelImpls: {
+        bj: new BlackJackDuelImpl({
+          deckGenerator: () => myDeck,
+          gameBrain: seqBrain,
+        }),
+      },
+    }),
   ],
-  botContext
+  config
 );
 setBalanceNoReserved(userData, "a", 100);
 setBalanceNoReserved(userData, "testbot", 0);
@@ -735,7 +717,7 @@ testHandler(
   new RegExp(
     "I accept! Let the blackjack duel begin[\\s\\S]*" +
       "a's hand: 9♠,9♥, totaling 18;\\s+testbot's hand: 9♦,9♣, totaling 18\\.[\\s\\S]*" +
-      "testbot pulls a 2♦, totaling 20!\\s+testbot stands with 20\\.\[\\s\\S]*a, your move"
+      "testbot pulls a 2♦, totaling 20!\\s+testbot stands with 20\\.[\\s\\S]*a, your move"
   )
 );
 testHandler(
@@ -780,13 +762,19 @@ testHandler(aChatContext, "!budget", /The casino has -10 points$/);
 myDeck.cards = new Deck().cards;
 instance = createTestBot(
   [
-    (u) =>
-      new DuelBot(u, 0, {
-        bj: new BlackJackDuelImpl(() => myDeck, new BlackJackBrain(0)), // use this deck interface and don't shuffle players
-        "testduelname": new TestDuelImpl(),
-      }),
+    new DuelBot({
+      ...config,
+      playerShuffleChance: 0,
+      duelImpls: {
+        bj: new BlackJackDuelImpl({
+          deckGenerator: () => myDeck,
+          gameBrain: new BlackJackBrain(0),
+        }), // use this deck interface and don't shuffle players
+        testduelname: new TestDuelImpl(),
+      },
+    }),
   ],
-  botContext
+  config
 );
 setBalanceNoReserved(userData, "a", 100);
 setBalanceNoReserved(userData, "b", 100);
@@ -797,11 +785,7 @@ testHandler(
   "!duel 10 a",
   /a, reply with !accept \[b\] to accept the blackjack duel, if you're ready to bet 10 points!/
 );
-testHandler(
-  cChatContext,
-  "!accept b",
-  /b didn't request a duel with you/
-);
+testHandler(cChatContext, "!accept b", /b didn't request a duel with you/);
 testHandler(
   cChatContext,
   "!duel 10 d testduelname",
@@ -862,16 +846,8 @@ testHandler(
   "!check",
   /b's hand: K♦,K♠, totaling 20;\s+a's hand: K♣,K♥, totaling 20\.[\s\S]*b, your move!/
 );
-testHandler(
-  cChatContext,
-  "!check",
-  /test duel status/
-);
-testHandler(
-  dChatContext,
-  "!check",
-  /test duel status/
-);
+testHandler(cChatContext, "!check", /test duel status/);
+testHandler(dChatContext, "!check", /test duel status/);
 testHandler(
   aChatContext,
   "!balance",
@@ -944,16 +920,8 @@ testHandler(
   "!balance",
   /You have 10123 points \(currently betted 1000 of those\), b!/
 );
-testHandler(
-  bChatContext,
-  "!hit",
-  /b pulls a Q♠, totaling 12! b, your move!/
-);
-testHandler(
-  bChatContext,
-  "!hit",
-  /b pulls a 6♣, totaling 18! b, your move!/
-);
+testHandler(bChatContext, "!hit", /b pulls a Q♠, totaling 12! b, your move!/);
+testHandler(bChatContext, "!hit", /b pulls a 6♣, totaling 18! b, your move!/);
 testHandler(
   bChatContext,
   "!hit",
@@ -984,12 +952,21 @@ testHandler(bChatContext, "!check", /duel result was: you lost to a/);
   }
   instance = createTestBot(
     [
-      (u) =>
-        new DuelBot(u, 1, {
-          anagrams: new AnagramsDuelImpl(anagrams, 4, undefined, randomizer),
-        }),
+      new DuelBot({
+        ...config,
+        playerShuffleChance: 1,
+        duelImpls: {
+          anagrams: new AnagramsDuelImpl({
+            anagrams: JSON.stringify(anagrams),
+            anagramsIsFile: false,
+            numToGuess: 4,
+            gameBrain: undefined,
+            randomizer: randomizer,
+          }),
+        },
+      }),
     ],
-    botContext
+    config
   );
 
   setBalanceNoReserved(userData, "a", 100);
@@ -1079,28 +1056,28 @@ testHandler(bChatContext, "!check", /duel result was: you lost to a/);
  */
 {
   let counter = 0;
-  let validGuesses = [
-    "crane",
-    "plane",
-    "enarc",
-  ];
+  let validGuesses = ["crane", "plane", "enarc"];
   function randomizer() {
     counter = counter % validGuesses.length;
     return counter++ / validGuesses.length;
   }
   instance = createTestBot(
     [
-      (u) =>
-        new DuelBot(u, 1, {
-          wordle: new WordleDuelImpl(
-            validGuesses,
-            validGuesses,
-            undefined,
-            randomizer
-          ),
-        }),
+      new DuelBot({
+        ...config,
+        playerShuffleChance: 1,
+        duelImpls: {
+          wordle: new WordleDuelImpl({
+            validWordleGuesses: JSON.stringify(validGuesses),
+            validWordleTargets: JSON.stringify(validGuesses),
+            validWordleDataIsFile: false,
+            gameBrain: new DoNothingBrain(0.1),
+            randomizer: randomizer,
+          }),
+        },
+      }),
     ],
-    botContext
+    config
   );
 
   setBalanceNoReserved(userData, "a", 100);
@@ -1113,26 +1090,10 @@ testHandler(bChatContext, "!check", /duel result was: you lost to a/);
     "!duel 10 b wordle",
     /b, reply with !accept \[a\] to accept the wordle duel, if you're ready to bet 10 points!/
   );
-  testHandler(
-    bChatContext,
-    "!accept",
-    /Let the wordle duel begin/
-  );
-  testHandler(
-    aChatContext,
-    "!wo plane",
-    /a guessed: PL🅰🅽🅴/
-  );
-  testHandler(
-    aChatContext,
-    "!wo aaaaa",
-    /Not a word/
-  );
-  testHandler(
-    bChatContext,
-    "!wo enarc",
-    /b guessed: 🄔🄝🅰🄡🄒/
-  );
+  testHandler(bChatContext, "!accept", /Let the wordle duel begin/);
+  testHandler(aChatContext, "!wo plane", /a guessed: PL🅰🅽🅴/);
+  testHandler(aChatContext, "!wo aaaaa", /Not a word/);
+  testHandler(bChatContext, "!wo enarc", /b guessed: 🄔🄝🅰🄡🄒/);
   testHandler(
     aChatContext,
     "!wo crane",
@@ -1143,78 +1104,50 @@ testHandler(bChatContext, "!check", /duel result was: you lost to a/);
 // test wordle against bot
 {
   let counter = 0;
-  let validGuesses = [
-    "crane",
-    "plane",
-    "enarc",
-  ];
+  let validGuesses = ["crane", "plane", "enarc"];
   function randomizer() {
     return 0;
   }
   instance = createTestBot(
     [
-      (u) =>
-        new DuelBot(u, 1, {
-          wordle: new WordleDuelImpl(
-            validGuesses,
-            validGuesses,
-            new DoNothingBrain(0),
-            randomizer
-          ),
-        }),
+      new DuelBot({
+        ...config,
+        playerShuffleChance: 1,
+        duelImpls: {
+          wordle: new WordleDuelImpl({
+            validWordleGuesses: JSON.stringify(validGuesses),
+            validWordleTargets: JSON.stringify(validGuesses),
+            validWordleDataIsFile: false,
+            gameBrain: new DoNothingBrain(0.0),
+            randomizer: randomizer,
+          }),
+        },
+      }),
     ],
-    botContext
+    config
   );
 
   setBalanceNoReserved(userData, "a", 100);
   setBalanceNoReserved(userData, "testbot", 100);
 
   testHandler(aChatContext, "!duels", /List of duel types: wordle/);
-  testHandler(
-    aChatContext,
-    "!duel 10 testbot wordle",
-    /I accept!/
-  );
-  testHandler(
-    aChatContext,
-    "!wo plane",
-    /a guessed: PL🅰🅽🅴/
-  );
-  testHandler(
-    aChatContext,
-    "!wo aaaaa",
-    /Not a word/
-  );
-  testHandler(
-    bChatContext,
-    "!wo enarc",
-    /b, you're not in a duel!/
-  );
-  testHandler(
-    aChatContext,
-    "!wo enarc",
-    /a guessed: 🄔🄝🅰🄡🄒/
-  );
+  testHandler(aChatContext, "!duel 10 testbot wordle", /I accept!/);
+  testHandler(aChatContext, "!wo plane", /a guessed: PL🅰🅽🅴/);
+  testHandler(aChatContext, "!wo aaaaa", /Not a word/);
+  testHandler(bChatContext, "!wo enarc", /b, you're not in a duel!/);
+  testHandler(aChatContext, "!wo enarc", /a guessed: 🄔🄝🅰🄡🄒/);
   testHandler(
     aChatContext,
     "!wo crane",
     /a guessed: 🅲🆁🅰🅽🅴! The winner is a;[\s\S*]a won 10 points and now has 110 points/
   );
-  testHandler(
-    aChatContext,
-    "!budget",
-    /The casino has 90 points/
-  );
+  testHandler(aChatContext, "!budget", /The casino has 90 points/);
 
   setBalanceNoReserved(userData, "a", 100);
   setBalanceNoReserved(userData, "testbot", 100);
 
   testHandler(aChatContext, "!duels", /List of duel types: wordle/);
-  testHandler(
-    aChatContext,
-    "!duel 10 testbot wordle",
-    /I accept!/
-  );
+  testHandler(aChatContext, "!duel 10 testbot wordle", /I accept!/);
   for (let i = 0; i < 5; i++) {
     testHandler(aChatContext, "!wo plane", /a guessed: PL🅰🅽🅴/);
   }
@@ -1223,9 +1156,5 @@ testHandler(bChatContext, "!check", /duel result was: you lost to a/);
     "!wo enarc",
     /You have 0 guesses left. The winner is testbot;\s+a lost 10 points and now has 90 points/
   );
-  testHandler(
-    aChatContext,
-    "!budget",
-    /The casino has 110 points/
-  );
+  testHandler(aChatContext, "!budget", /The casino has 110 points/);
 }

@@ -1,18 +1,18 @@
 export { DuelCommand, DuelAccepted, DuelImpl, DuelMove, DuelHandler, DuelBot };
 
 import * as rouletteModule from "../util/roulette";
-import { UserData } from "../util/userdata";
 import {
-  Bot,
   BotHandler,
   ChatContext,
+  ConfigFromGet,
+  ConfigName,
+  Configurable,
   Game,
   GameBrain,
   GameContext,
-  GameMoveResult,
   GameResult,
 } from "../util/interfaces";
-import { BotBase, BotBaseContext, PerUserData } from "./botbase";
+import { baseBotConfig, BotBase } from "./botbase";
 import Fraction from "fraction.js";
 
 class DuelInfo {
@@ -91,12 +91,16 @@ interface DuelMove {
 }
 
 interface DuelHandler {
-  action: (bot: DuelBot, context: ChatContext, args: string[]) => string | undefined;
+  action: (
+    bot: DuelBot,
+    context: ChatContext,
+    args: string[]
+  ) => string | undefined;
   description: string;
   format: string;
 }
 
-abstract class DuelImpl<T extends Game> {
+abstract class DuelImpl<T extends Game> implements Configurable {
   abstract handlers: { [key: string]: DuelHandler };
   abstract bindMoves: { [key in keyof T["moveHandlers"]]: DuelMove };
   abstract duelDescription: string;
@@ -121,7 +125,8 @@ abstract class DuelImpl<T extends Game> {
   ): string;
 
   protected listMoves(bot: DuelBot): string {
-    const listMove = (move: [string, DuelMove]) => `${bot.botContext.cmdMarker}${move[0]} ${move[1].format}`;
+    const listMove = (move: [string, DuelMove]) =>
+      `${bot.botContext.cmdMarker}${move[0]} ${move[1].format}`;
     const moves = Object.entries(this.bindMoves);
 
     if (moves.length === 0) {
@@ -144,20 +149,24 @@ abstract class DuelImpl<T extends Game> {
   ): T;
 }
 
-class DuelBot extends BotBase {
+function duelBotConfig() {
+  return baseBotConfig({
+    playerShuffleChance: 0.5,
+    duelImpls: {} as { [key: string]: DuelImpl<any> },
+  });
+}
+
+@ConfigName("DuelBot", duelBotConfig)
+class DuelBot extends BotBase implements Configurable {
   readonly duels: { [key: string]: DuelInfo } = {};
   readonly playerShuffleChance: number;
   readonly duelImpls: { [key: string]: DuelImpl<any> };
   readonly handlers: { [key: string]: BotHandler };
 
-  constructor(
-    botContext: BotBaseContext,
-    playerShuffleChance: number = 0.5,
-    duelImpls: { [key: string]: DuelImpl<any> } = {}
-  ) {
-    super(botContext);
-    this.playerShuffleChance = playerShuffleChance;
-    this.duelImpls = duelImpls;
+  constructor(config: ConfigFromGet<typeof duelBotConfig>) {
+    super(config);
+    this.playerShuffleChance = config.playerShuffleChance;
+    this.duelImpls = config.duelImpls;
     this.handlers = {
       duels: {
         action: this.duelsHandler.bind(this),

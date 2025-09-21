@@ -1,20 +1,40 @@
 export {
   PerUserData,
   onReadUserData,
+  concreteBaseBotConfig,
   BotBase,
   BotBaseContext,
   UsernameUpdaterBot,
-  composeBotsWithUsernameUpdater,
   BotManager,
   createMemoryUserData,
   createFileUserData,
+  createConfigurableBotFactory,
 };
 
-import { FileUserData, MemoryUserData, UserData, UserDatum } from "../util/userdata";
-import { Bot, BotContext, BotHandler, ChatContext, composeBots } from "../util/interfaces";
+import {
+  FileUserData,
+  MemoryUserData,
+  UserData,
+  UserDatum,
+} from "../util/userdata";
+import {
+  Bot,
+  BotContext,
+  BotHandler,
+  ChatContext,
+  composeBots,
+  Config,
+  ConfigFromGet,
+  ConfigName,
+  Configurable,
+  ConfigurableRegistry,
+  noDefaultValue,
+} from "../util/interfaces";
 import { RouletteBase } from "../util/roulette";
 import Fraction from "fraction.js";
 import { Trie } from "../util/trie";
+import * as yaml from "yaml";
+import * as fs from "fs";
 
 interface PerUserData extends UserDatum {
   balance: number;
@@ -35,25 +55,41 @@ function onReadUserData(userId: string, read: any): PerUserData {
   return result;
 }
 
-class BotBaseContext implements BotContext {
+function botBaseContextConfig() {
+  return {
+    cmdMarker: noDefaultValue(String),
+    botUsername: noDefaultValue(String),
+    userData: noDefaultValue(UserData<PerUserData>),
+  };
+}
+
+@ConfigName("BotBaseContext", botBaseContextConfig)
+class BotBaseContext implements BotContext, Configurable {
   cmdMarker: string;
   botUsername: string;
   userData: UserData<PerUserData>;
 
-  constructor(
-    cmdMarker: string,
-    botUsername: string,
-    userData: UserData<PerUserData>
-  ) {
-    this.cmdMarker = cmdMarker;
-    this.botUsername = botUsername;
-    this.userData = userData;
+  constructor(config: ConfigFromGet<typeof botBaseContextConfig>) {
+    this.cmdMarker = config.cmdMarker.valueOf();
+    this.botUsername = config.botUsername.valueOf();
+    this.userData = config.userData;
   }
 }
 
-abstract class BotBase implements Bot {
+export function baseBotConfig<T extends Config>(c: T) {
+  return {
+    botContext: noDefaultValue(BotBaseContext),
+    ...c,
+  };
+}
+
+function concreteBaseBotConfig() {
+  return baseBotConfig<Config>({});
+}
+
+abstract class BotBase implements Bot, Configurable {
   readonly botContext: BotBaseContext;
-  abstract handlers: { [key: string]: BotHandler; };
+  abstract handlers: { [key: string]: BotHandler };
   private _handlersTrie?: Trie<string, BotHandler>;
   public get handlersTrie(): Trie<string, BotHandler> {
     if (!this._handlersTrie) {
@@ -64,12 +100,12 @@ abstract class BotBase implements Bot {
     return this._handlersTrie;
   }
 
-  constructor(botContext: BotBaseContext) {
-    this.botContext = botContext;
-    botContext.userData.update(
-      botContext.botUsername,
+  constructor(config: ConfigFromGet<typeof concreteBaseBotConfig>) {
+    this.botContext = config.botContext;
+    this.botContext.userData.update(
+      this.botContext.botUsername,
       (inPlaceValue: PerUserData) => {
-        inPlaceValue.username = botContext.botUsername;
+        inPlaceValue.username = this.botContext.botUsername;
       }
     );
   }
@@ -248,27 +284,13 @@ abstract class BotBase implements Bot {
   }
 }
 
+@ConfigName("UsernameUpdaterBot", () => concreteBaseBotConfig)
 class UsernameUpdaterBot extends BotBase {
   handlers: {};
-
-  constructor(botContext: BotBaseContext) {
-    super(botContext);
-  }
 
   onHandlerCalled(context: ChatContext, args: string[]): void {
     this.updateUsername(context);
   }
-}
-
-function composeBotsWithUsernameUpdater(
-  botConstructors: ((botContext: BotBaseContext) => Bot)[],
-  botContext: BotBaseContext
-): Bot {
-  const bots = [
-    new UsernameUpdaterBot(botContext),
-    ...botConstructors.map((constructor) => constructor(botContext)),
-  ];
-  return composeBots(bots);
 }
 
 function createFileUserData(channel: string): UserData<PerUserData> {
@@ -306,4 +328,76 @@ class BotManager {
     }
     return this.theBots[channel];
   }
+}
+
+function isPrimitive(value: any): boolean {
+  return typeof value !== "object" || value === null;
+}
+
+function isRaw(value: any): boolean {
+  return value instanceof Map || value instanceof Set || value.constructor === Object;
+}
+
+function createConfigurableBotFactory(
+  botUsername: string,
+  configPath: string
+): (channel: string, userData: UserData<PerUserData>) => Bot {
+  return (channel: string, userData: UserData<PerUserData>) => {
+    ConfigurableRegistry.register(
+      "BotUsername",
+      () => botUsername
+    );
+    ConfigurableRegistry.register("UserData", () => userData);
+    const config = yaml.parse(
+      fs.readFileSync(configPath, "utf8"),
+      (key, value) => {
+        if (isPrimitive(value)) {
+          // primitive value parsed
+          return value;
+        }
+
+        // non-primitive
+        const obj = value as Object;
+        if (!isRaw(obj)) {
+          // already revived
+          return obj;
+        }
+
+        // apply inheritance
+        let newObj = { ...obj };
+        while ("<<" in newObj) {
+          const parent = obj["<<"] as Object;
+          delete newObj["<<"];
+          newObj = { ...newObj, ...parent };
+        }
+
+        // apply configuration
+        if ("name" in newObj) {
+          const name = newObj["name"];
+          if (typeof name !== "string") {
+            throw new Error(`Invalid config for ${name} - name must be a string`);
+          }
+          const ctor = ConfigurableRegistry.get(name);
+          if (ctor === undefined) {
+            throw new Error(`Unknown config for ${name} - unknown config name`);
+          }
+          delete newObj["name"];
+          const configured = ctor(newObj);
+          if (configured === undefined) {
+            throw new Error("Invalid config for " + name);
+          }
+          console.log(`${name} ${configured.constructor.name}`);
+          return configured;
+        }
+        return newObj;
+      }
+    );
+    const bots = config["bots"];
+    if (bots === undefined) {
+      throw new Error("No bots defined in config");
+    }
+    console.log(`${bots[0].constructor.name}`)
+    console.log(`${JSON.stringify(bots[0])}`)
+    return composeBots(bots as Bot[]);
+  };
 }

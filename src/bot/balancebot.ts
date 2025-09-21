@@ -1,10 +1,21 @@
-export { BalanceBot };
+export { balanceBotConfig, BalanceBot };
 
-import { UserData } from "../util/userdata";
-import { Bot, BotContext, BotHandler, ChatContext, formatTime } from "../util/interfaces";
-import { BotBase, BotBaseContext, PerUserData } from "./botbase";
+import {
+  BotHandler,
+  ChatContext,
+  ConfigFromGet,
+  ConfigName,
+  Configurable,
+  formatTime,
+} from "../util/interfaces";
+import { baseBotConfig, BotBase } from "./botbase";
 
-class BalanceBot extends BotBase {
+function balanceBotConfig() {
+  return baseBotConfig({});
+}
+
+@ConfigName("BalanceBot", balanceBotConfig)
+class BalanceBot extends BotBase implements Configurable {
   static readonly CLAIM_SIZE = 100;
   static readonly CLAIM_COOLDOWN_MINUTES = 30;
   static readonly CLAIM_TRICKERY_CHANCE_PERCENT = 1;
@@ -43,8 +54,8 @@ class BalanceBot extends BotBase {
     },
   };
 
-  constructor(botContext: BotBaseContext) {
-    super(botContext);
+  constructor(config: ConfigFromGet<typeof balanceBotConfig>) {
+    super(config);
   }
 
   onHandlerCalled(context: ChatContext, args: string[]): void {}
@@ -113,7 +124,9 @@ class BalanceBot extends BotBase {
     } else if (delta > claimSize) {
       msg = "Lucky! " + msg;
     }
-    console.log(`* claim: ${userId}, ${context.username}, ${delta}, ${trickery} <> ${chance}, ${trickery2}`);
+    console.log(
+      `* claim: ${userId}, ${context.username}, ${delta}, ${trickery} <> ${chance}, ${trickery2}`
+    );
     return (
       msg +
       ` You claimed ${delta} points and now have ${balance} points, ${context["username"]}!`

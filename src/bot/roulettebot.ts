@@ -1,9 +1,14 @@
 export { BetCommand, RouletteBot };
 
 import * as rouletteModule from "../util/roulette";
-import { UserData } from "../util/userdata";
-import { Bot, BotHandler, ChatContext } from "../util/interfaces";
-import { BotBase, BotBaseContext, PerUserData } from "./botbase";
+import {
+  BotHandler,
+  ChatContext,
+  ConfigFromGet,
+  ConfigName,
+  Configurable,
+} from "../util/interfaces";
+import { baseBotConfig, BotBase } from "./botbase";
 import Fraction from "fraction.js";
 
 interface BetCommand {
@@ -30,7 +35,12 @@ enum PredefinedBets {
   All0 = "all0",
 }
 
-class RouletteBot extends BotBase {
+function rouletteBotConfig() {
+  return baseBotConfig({});
+}
+
+@ConfigName("RouletteBot", rouletteBotConfig)
+class RouletteBot extends BotBase implements Configurable {
   readonly handlers: { [key: string]: BotHandler } = {
     bet: {
       action: this.betHandler.bind(this),
@@ -61,8 +71,8 @@ class RouletteBot extends BotBase {
 
   readonly roulette = new rouletteModule.Roulette(RouletteBot.N_PLACES);
 
-  constructor(botContext: BotBaseContext) {
-    super(botContext);
+  constructor(config: ConfigFromGet<typeof rouletteBotConfig>) {
+    super(config);
   }
 
   onHandlerCalled(context: ChatContext, args: string[]): void {}

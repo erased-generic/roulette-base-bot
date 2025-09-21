@@ -1,11 +1,25 @@
 export { FunFactsBot };
 
 import { UserData } from "../util/userdata";
-import { Bot, BotHandler, ChatContext } from "../util/interfaces";
-import { BotBase, BotBaseContext, PerUserData } from "./botbase";
+import {
+  BotHandler,
+  ChatContext,
+  ConfigFromGet,
+  ConfigName,
+  Configurable,
+  noDefaultValue,
+} from "../util/interfaces";
+import { baseBotConfig, BotBase, BotBaseContext, PerUserData } from "./botbase";
 import * as fs from "fs";
 
-class FunFactsBot extends BotBase {
+function funFactsBotConfig() {
+  return baseBotConfig({
+    filePath: noDefaultValue(String),
+  });
+}
+
+@ConfigName("FunFactsBot", funFactsBotConfig)
+class FunFactsBot extends BotBase implements Configurable {
   static readonly FACT_PRICE = 333;
   facts: string[];
 
@@ -17,11 +31,11 @@ class FunFactsBot extends BotBase {
     },
   };
 
-  constructor(botContext: BotBaseContext, filePath: string) {
-    super(botContext);
+  constructor(config: ConfigFromGet<typeof funFactsBotConfig>) {
+    super(config);
     this.facts = (() => {
       try {
-        return JSON.parse(fs.readFileSync(filePath, "utf-8"));
+        return JSON.parse(fs.readFileSync(config.filePath.valueOf(), "utf-8"));
       } catch (e) {
         if (e.code === "ENOENT") {
           return [];
