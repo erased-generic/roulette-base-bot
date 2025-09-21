@@ -386,7 +386,6 @@ function createConfigurableBotFactory(
           if (configured === undefined) {
             throw new Error("Invalid config for " + name);
           }
-          console.log(`${name} ${configured.constructor.name}`);
           return configured;
         }
         return newObj;
@@ -396,8 +395,6 @@ function createConfigurableBotFactory(
     if (bots === undefined) {
       throw new Error("No bots defined in config");
     }
-    console.log(`${bots[0].constructor.name}`)
-    console.log(`${JSON.stringify(bots[0])}`)
     return composeBots(bots as Bot[]);
   };
 }
