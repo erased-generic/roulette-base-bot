@@ -4,12 +4,12 @@ import { UserData } from "../util/userdata";
 import {
   BotHandler,
   ChatContext,
-  ConfigFromGet,
+  MappedSchemaFromGet,
   ConfigName,
   Configurable,
   noDefaultValue,
 } from "../util/interfaces";
-import { baseBotConfig, BotBase, BotBaseContext, PerUserData } from "./botbase";
+import { baseBotConfig, BotBase, BotBaseContext } from "./botbase";
 import * as fs from "fs";
 
 function funFactsBotConfig() {
@@ -31,7 +31,7 @@ class FunFactsBot extends BotBase implements Configurable {
     },
   };
 
-  constructor(config: ConfigFromGet<typeof funFactsBotConfig>) {
+  constructor(config: MappedSchemaFromGet<typeof funFactsBotConfig>) {
     super(config);
     this.facts = (() => {
       try {

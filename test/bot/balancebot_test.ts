@@ -1,15 +1,15 @@
 import { ChatContext } from "../../src/util/interfaces";
 import {
   createTestBot,
-  createTestBotContext,
+  createTestBotConfig,
   instanceTestHandler,
   setBalanceNoReserved,
 } from "./utils";
 
 // Test the bot itself
-const botContext = createTestBotContext();
-const userData = botContext.userData;
-const instance = createTestBot([], { botContext: botContext });
+const config = createTestBotConfig();
+const userData = config.userData;
+const instance = createTestBot([], config);
 const testChatContext = { username: "test", "user-id": "test", mod: false };
 
 function testHandler(context: ChatContext, command: string, expected: RegExp) {
@@ -18,7 +18,7 @@ function testHandler(context: ChatContext, command: string, expected: RegExp) {
 
 // test initial balance
 testHandler(testChatContext, "!balance", /You have 100 points/);
-setBalanceNoReserved(userData, botContext.botUsername, 200);
+setBalanceNoReserved(userData, config.botContext.botUsername, 200);
 testHandler(testChatContext, "!budget", /casino has 200 points/);
 
 // test claims

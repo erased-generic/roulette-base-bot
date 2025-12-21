@@ -14,38 +14,52 @@ import * as assert from "assert";
 import {
   Bot,
   ChatContext,
-  ConfigFromGet,
+  MappedSchema,
+  MappedSchemaFromGet,
   callHandler,
   composeBots,
   selectHandler,
   splitCommand,
 } from "../../src/util/interfaces";
 import {
+  BaseUserDataSchema,
   BotBaseContext,
-  PerUserData,
   UsernameUpdaterBot,
   concreteBaseBotConfig,
-  onReadUserData,
 } from "../../src/bot/botbase";
-import { MemoryUserData, UserData } from "../../src/util/userdata";
-import { BalanceBot, balanceBotConfig } from "../../src/bot/balancebot";
+import { MemoryUserData, UserData, UserDatum } from "../../src/util/userdata";
+import {
+  BalanceBot,
+  balanceBotConfig,
+  balanceBotUserData,
+  BalanceUserDataSchema,
+} from "../../src/bot/balancebot";
+
+function testUserData() {
+  return balanceBotUserData();
+}
+
+type TestUserDataSchema = MappedSchemaFromGet<typeof testUserData>;
 
 function createTestUserData() {
-  return new MemoryUserData<PerUserData>(onReadUserData, {});
+  return new MemoryUserData({}).withSchema(testUserData());
 }
 
 function createTestBotContext() {
-  return new BotBaseContext({ cmdMarker: "!", botUsername: "testbot", userData: createTestUserData() });
+  return new BotBaseContext({
+    cmdMarker: "!",
+    botUsername: "testbot",
+  });
 }
 
 function createTestBotConfig() {
-  return { botContext: createTestBotContext() };
+  return { botContext: createTestBotContext(), userData: createTestUserData() };
 }
 
 function createTestBot(
   bots: Bot[],
-  config: ConfigFromGet<typeof balanceBotConfig> &
-    ConfigFromGet<typeof concreteBaseBotConfig>
+  config: MappedSchemaFromGet<typeof balanceBotConfig> &
+    MappedSchemaFromGet<typeof concreteBaseBotConfig>
 ) {
   return composeBots([
     new BalanceBot(config),
@@ -87,7 +101,7 @@ function instanceTestHandler(
 }
 
 function setBalance(
-  userData: UserData<PerUserData>,
+  userData: UserData<MappedSchema<BaseUserDataSchema>>,
   userId: string,
   balance: number
 ) {
@@ -95,7 +109,7 @@ function setBalance(
 }
 
 function setBalanceNoReserved(
-  userData: UserData<PerUserData>,
+  userData: UserData<MappedSchema<BaseUserDataSchema>>,
   userId: string,
   balance: number
 ) {

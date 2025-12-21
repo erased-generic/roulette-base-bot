@@ -1,6 +1,6 @@
 import * as wordleModule from "../util/wordle";
 import {
-  ConfigFromGet,
+  MappedSchemaFromGet,
   ConfigName,
   Configurable,
   GameBrain,
@@ -9,12 +9,7 @@ import {
   RejectingBrain,
 } from "../util/interfaces";
 import { BotBase } from "./botbase";
-import {
-  DuelBot,
-  DuelAccepted,
-  DuelImpl,
-  DuelHandler,
-} from "./duelbot";
+import { DuelBot, DuelAccepted, DuelImpl, DuelHandler } from "./duelbot";
 import * as fs from "fs";
 
 export { DoNothingBrain, wordleDuelImplConfig, WordleDuelImpl };
@@ -53,7 +48,7 @@ class WordleDuelImpl
   readonly validWordleGuesses: string[] = [];
   readonly randomizer: () => number;
 
-  constructor(config: ConfigFromGet<typeof wordleDuelImplConfig>) {
+  constructor(config: MappedSchemaFromGet<typeof wordleDuelImplConfig>) {
     super();
     if (config.validWordleDataIsFile) {
       this.validWordleTargets = JSON.parse(

@@ -111,7 +111,7 @@ class TestDuelImpl extends DuelImpl<TestGame> {
 
 // first, test rendezvous mechanism
 const config = createTestBotConfig();
-const userData = config.botContext.userData;
+const userData = config.userData;
 const myDeck = new Deck();
 let instance = createTestBot(
   [

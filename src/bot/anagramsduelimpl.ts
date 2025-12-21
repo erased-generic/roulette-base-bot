@@ -1,7 +1,7 @@
 import * as anagramsModule from "../util/anagrams";
 import {
   ChatContext,
-  ConfigFromGet,
+  MappedSchemaFromGet,
   ConfigName,
   Configurable,
   GameBrain,
@@ -10,12 +10,7 @@ import {
   optionalValue,
 } from "../util/interfaces";
 import { BotBase } from "./botbase";
-import {
-  DuelBot,
-  DuelAccepted,
-  DuelImpl,
-  DuelHandler,
-} from "./duelbot";
+import { DuelBot, DuelAccepted, DuelImpl, DuelHandler } from "./duelbot";
 import * as fs from "fs";
 
 export { anagramsDuelImplConfig, AnagramsDuelImpl };
@@ -55,7 +50,7 @@ class AnagramsDuelImpl
   readonly numToGuess: number;
   readonly randomizer: () => number;
 
-  constructor(config: ConfigFromGet<typeof anagramsDuelImplConfig>) {
+  constructor(config: MappedSchemaFromGet<typeof anagramsDuelImplConfig>) {
     super();
     const anagramsJSON = config.anagramsIsFile
       ? fs.readFileSync(config.anagrams.valueOf()).toString()

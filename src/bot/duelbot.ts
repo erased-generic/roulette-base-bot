@@ -4,7 +4,7 @@ import * as rouletteModule from "../util/roulette";
 import {
   BotHandler,
   ChatContext,
-  ConfigFromGet,
+  MappedSchemaFromGet,
   ConfigName,
   Configurable,
   Game,
@@ -163,7 +163,7 @@ class DuelBot extends BotBase implements Configurable {
   readonly duelImpls: { [key: string]: DuelImpl<any> };
   readonly handlers: { [key: string]: BotHandler };
 
-  constructor(config: ConfigFromGet<typeof duelBotConfig>) {
+  constructor(config: MappedSchemaFromGet<typeof duelBotConfig>) {
     super(config);
     this.playerShuffleChance = config.playerShuffleChance;
     this.duelImpls = config.duelImpls;
