@@ -9,7 +9,7 @@ import {
 
 // Test the bot itself
 const config = createTestBotConfig();
-const userData = config.botContext.userData;
+const userData = config.userData;
 const instance = createTestBot([new MiscBot(config)], config);
 const testChatContext = { username: "test", "user-id": "test", mod: false };
 

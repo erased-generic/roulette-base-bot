@@ -22,7 +22,7 @@ function testParser(
 }
 
 const config = createTestBotConfig();
-const userData = config.botContext.userData;
+const userData = config.userData;
 let predict_instance: PredictionBot | undefined;
 const instance = createTestBot(
   [(predict_instance = new PredictionBot({ ...config, n: 100 }))],

@@ -1,17 +1,13 @@
 import * as blackjackModule from "../util/blackjack";
 import {
-  ConfigFromGet,
+  MappedSchemaFromGet,
   ConfigName,
   Configurable,
   GameBrain,
   GameResult,
 } from "../util/interfaces";
 import { BotBase } from "./botbase";
-import {
-  DuelBot,
-  DuelAccepted,
-  DuelImpl,
-} from "./duelbot";
+import { DuelBot, DuelAccepted, DuelImpl } from "./duelbot";
 
 export { blackJackDuelImplConfig, BlackJackDuelImpl };
 
@@ -50,7 +46,7 @@ class BlackJackDuelImpl
     return deck;
   }
 
-  constructor(config: ConfigFromGet<typeof blackJackDuelImplConfig>) {
+  constructor(config: MappedSchemaFromGet<typeof blackJackDuelImplConfig>) {
     super();
     this.deckGenerator = config.deckGenerator;
     this.gameBrain = config.gameBrain;

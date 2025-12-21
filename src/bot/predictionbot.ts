@@ -4,7 +4,7 @@ import * as rouletteModule from "../util/roulette";
 import {
   BotHandler,
   ChatContext,
-  ConfigFromGet,
+  MappedSchemaFromGet,
   ConfigName,
   Configurable,
   noDefaultValue,
@@ -67,7 +67,7 @@ class PredictionBot extends BotBase implements Configurable {
   readonly prediction: rouletteModule.Prediction;
   predictionOpen = false;
 
-  constructor(config: ConfigFromGet<typeof predictionBotConfig>) {
+  constructor(config: MappedSchemaFromGet<typeof predictionBotConfig>) {
     super(config);
     this.n_places = config.n.valueOf();
     this.all_places = rouletteModule.RouletteBase.getAllNumbers(this.n_places);

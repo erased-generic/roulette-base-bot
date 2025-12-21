@@ -1,21 +1,45 @@
-export { balanceBotConfig, BalanceBot };
+export {
+  balanceBotConfig,
+  BalanceBot,
+  BalanceUserDataSchema,
+  balanceBotUserData,
+};
 
 import {
   BotHandler,
   ChatContext,
-  ConfigFromGet,
+  MappedSchemaFromGet,
   ConfigName,
   Configurable,
   formatTime,
+  combineSchemas,
+  optionalValue,
 } from "../util/interfaces";
-import { baseBotConfig, BotBase } from "./botbase";
+import { UserData, UserDatum } from "../util/userdata";
+import {
+  baseBotConfig,
+  baseBotConfigU,
+  baseUserData,
+  BotBase,
+} from "./botbase";
+
+function balanceBotUserData() {
+  return combineSchemas(baseUserData(), {
+    lastClaim: optionalValue(Number),
+  });
+}
+
+type BalanceUserDataSchema = ReturnType<typeof balanceBotUserData>;
 
 function balanceBotConfig() {
-  return baseBotConfig({});
+  return baseBotConfigU(baseBotConfig({}), balanceBotUserData());
 }
 
 @ConfigName("BalanceBot", balanceBotConfig)
-class BalanceBot extends BotBase implements Configurable {
+class BalanceBot
+  extends BotBase<BalanceUserDataSchema>
+  implements Configurable
+{
   static readonly CLAIM_SIZE = 100;
   static readonly CLAIM_COOLDOWN_MINUTES = 30;
   static readonly CLAIM_TRICKERY_CHANCE_PERCENT = 1;
@@ -54,7 +78,7 @@ class BalanceBot extends BotBase implements Configurable {
     },
   };
 
-  constructor(config: ConfigFromGet<typeof balanceBotConfig>) {
+  constructor(config: MappedSchemaFromGet<typeof balanceBotConfig>) {
     super(config);
   }
 
@@ -63,7 +87,7 @@ class BalanceBot extends BotBase implements Configurable {
   pointsHandler(context: ChatContext, args: string[]): string | undefined {
     // Print the user's points
     const userId = context["user-id"];
-    const info = this.botContext.userData.get(userId);
+    const info = this.userData.get(userId);
 
     let msg = `You have ${info.balance} points`;
     if (info.reservedBalance > 0) {
@@ -74,7 +98,7 @@ class BalanceBot extends BotBase implements Configurable {
 
   budgetHandler(context: ChatContext, args: string[]): string | undefined {
     // Print the bot's points
-    const info = this.botContext.userData.get(this.botContext.botUsername);
+    const info = this.userData.get(this.botContext.botUsername);
 
     let msg = `The casino has ${info.balance} points`;
     if (info.reservedBalance > 0) {
@@ -91,10 +115,10 @@ class BalanceBot extends BotBase implements Configurable {
 
     const userId = context["user-id"];
 
-    const lastClaim = this.botContext.userData.get(userId).lastClaim;
+    const lastClaim = this.userData.get(userId).lastClaim;
     const now = Date.now();
     if (lastClaim !== undefined) {
-      const elapsed = now - lastClaim;
+      const elapsed = now - lastClaim.valueOf();
       if (elapsed < claimCooldown) {
         return `You are on cooldown, ${
           context["username"]
@@ -115,7 +139,7 @@ class BalanceBot extends BotBase implements Configurable {
         msg += `You doubled your balance!`;
       }
     }
-    this.botContext.userData.update(userId, (inPlaceValue, hadKey) => {
+    this.userData.update(userId, (inPlaceValue, hadKey) => {
       inPlaceValue.lastClaim = now;
       balance = inPlaceValue.balance += delta;
     });
@@ -164,7 +188,7 @@ class BalanceBot extends BotBase implements Configurable {
     }
     return (
       `Top ${boardSize} richest people in our chat: ` +
-      Object.entries(this.botContext.userData.getAll())
+      Object.entries(this.userData.getAll())
         .filter(([id, data]) => id !== this.botContext.botUsername)
         .map(([id, data]) => {
           return { username: data.username, balance: data.balance };

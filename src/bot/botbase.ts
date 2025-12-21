@@ -1,6 +1,4 @@
 export {
-  PerUserData,
-  onReadUserData,
   concreteBaseBotConfig,
   BotBase,
   BotBaseContext,
@@ -9,6 +7,10 @@ export {
   createMemoryUserData,
   createFileUserData,
   createConfigurableBotFactory,
+  baseUserData,
+  BaseUserDataSchema,
+  baseBotConfigU,
+  baseBotConfig,
 };
 
 import {
@@ -23,12 +25,18 @@ import {
   BotHandler,
   ChatContext,
   composeBots,
-  Config,
-  ConfigFromGet,
+  Schema,
+  MappedSchemaFromGet,
   ConfigName,
   Configurable,
   ConfigurableRegistry,
   noDefaultValue,
+  isValidBySchema,
+  MappedSchemaElement,
+  MappedSchema,
+  optionalValue,
+  OptionalValue,
+  applySchema,
 } from "../util/interfaces";
 import { RouletteBase } from "../util/roulette";
 import Fraction from "fraction.js";
@@ -36,30 +44,10 @@ import { Trie } from "../util/trie";
 import * as yaml from "yaml";
 import * as fs from "fs";
 
-interface PerUserData extends UserDatum {
-  balance: number;
-  reservedBalance: number;
-  lastClaim?: number;
-}
-
-function onReadUserData(userId: string, read: any): PerUserData {
-  let defaultPerUserData: PerUserData = {
-    username: undefined,
-    balance: 100,
-    reservedBalance: 0,
-    lastClaim: undefined,
-  };
-
-  const result = { ...defaultPerUserData, ...read };
-  result.reservedBalance = 0;
-  return result;
-}
-
 function botBaseContextConfig() {
   return {
     cmdMarker: noDefaultValue(String),
     botUsername: noDefaultValue(String),
-    userData: noDefaultValue(UserData<PerUserData>),
   };
 }
 
@@ -67,28 +55,52 @@ function botBaseContextConfig() {
 class BotBaseContext implements BotContext, Configurable {
   cmdMarker: string;
   botUsername: string;
-  userData: UserData<PerUserData>;
 
-  constructor(config: ConfigFromGet<typeof botBaseContextConfig>) {
+  constructor(config: MappedSchemaFromGet<typeof botBaseContextConfig>) {
     this.cmdMarker = config.cmdMarker.valueOf();
     this.botUsername = config.botUsername.valueOf();
-    this.userData = config.userData;
   }
 }
 
-export function baseBotConfig<T extends Config>(c: T) {
+function baseUserData() {
   return {
-    botContext: noDefaultValue(BotBaseContext),
-    ...c,
+    username: optionalValue(String),
+    balance: 100,
+    reservedBalance: 0,
   };
 }
 
-function concreteBaseBotConfig() {
-  return baseBotConfig<Config>({});
+type BaseUserDataSchema = ReturnType<typeof baseUserData>;
+
+function baseBotConfigU<
+  T extends Schema,
+  U extends BaseUserDataSchema = BaseUserDataSchema
+>(configSchema: T, userDataSchema: U) {
+  return {
+    botContext: noDefaultValue(BotBaseContext),
+    userData: noDefaultValue(UserData<MappedSchema<U>>, (u) => {
+      return isValidBySchema(
+        u.withSchema(userDataSchema).getDefaultData(),
+        userDataSchema
+      );
+    }),
+    ...configSchema,
+  };
 }
 
-abstract class BotBase implements Bot, Configurable {
+function baseBotConfig<T extends Schema>(configSchema: T) {
+  return baseBotConfigU(configSchema, baseUserData());
+}
+
+function concreteBaseBotConfig() {
+  return baseBotConfig({} as Schema);
+}
+
+abstract class BotBase<U extends BaseUserDataSchema = BaseUserDataSchema>
+  implements Bot, Configurable
+{
   readonly botContext: BotBaseContext;
+  readonly userData: UserData<MappedSchema<U>>;
   abstract handlers: { [key: string]: BotHandler };
   private _handlersTrie?: Trie<string, BotHandler>;
   public get handlersTrie(): Trie<string, BotHandler> {
@@ -100,14 +112,17 @@ abstract class BotBase implements Bot, Configurable {
     return this._handlersTrie;
   }
 
-  constructor(config: ConfigFromGet<typeof concreteBaseBotConfig>) {
+  private getUserData(): UserData<MappedSchemaFromGet<typeof baseUserData>> {
+    // helper to circumvent TS type checking with MappedSchema<U>
+    return this.userData;
+  }
+
+  constructor(config: MappedSchemaFromGet<typeof baseBotConfigU<Schema, U>>) {
     this.botContext = config.botContext;
-    this.botContext.userData.update(
-      this.botContext.botUsername,
-      (inPlaceValue: PerUserData) => {
-        inPlaceValue.username = this.botContext.botUsername;
-      }
-    );
+    this.userData = config.userData;
+    this.getUserData().update(this.botContext.botUsername, (inPlaceValue) => {
+      inPlaceValue.username = this.botContext.botUsername;
+    });
   }
 
   abstract onHandlerCalled(context: ChatContext, args: string[]): void;
@@ -150,25 +165,27 @@ abstract class BotBase implements Bot, Configurable {
   }
 
   updateUsername(context: ChatContext) {
-    this.botContext.userData.get(context["user-id"]).username =
-      context.username;
+    this.getUserData().get(context["user-id"]).username =
+      context.username ?? "abc";
   }
 
   getUsername(userId: string) {
-    return this.botContext.userData.get(userId).username;
+    return this.getUserData().get(userId).username?.toString();
   }
 
-  protected getBalanceInfo(info: PerUserData): number {
+  protected getBalanceInfo(
+    info: MappedSchemaFromGet<typeof baseUserData>
+  ): number {
     return info.balance - info.reservedBalance;
   }
 
   protected getBalance(userId: string): number {
-    const info = this.botContext.userData.get(userId);
+    const info = this.getUserData().get(userId);
     return this.getBalanceInfo(info);
   }
 
   protected reserveBalance(userId: string, amount: number) {
-    this.botContext.userData.update(userId, (inPlaceValue, hadKey) => {
+    this.getUserData().update(userId, (inPlaceValue, hadKey) => {
       console.log(
         `* reserveBalance: ${userId}, ${
           inPlaceValue.username
@@ -183,7 +200,7 @@ abstract class BotBase implements Bot, Configurable {
     amount: number,
     extraReserveLimit?: number
   ): number | string {
-    const info = this.botContext.userData.get(userId);
+    const info = this.getUserData().get(userId);
     if (amount <= 0) {
       return `You can bet only a positive amount of points, ${info.username}!`;
     }
@@ -201,8 +218,8 @@ abstract class BotBase implements Bot, Configurable {
     reservedAmount: number,
     balanceAmount: number
   ): number {
-    const botData = this.botContext.userData.get(this.botContext.botUsername);
-    return this.botContext.userData.update(userId, (inPlaceValue, hadKey) => {
+    const botData = this.getUserData().get(this.botContext.botUsername);
+    return this.getUserData().update(userId, (inPlaceValue, hadKey) => {
       console.log(
         `* balance: ${userId}, ${this.getUsername(userId)}, ${JSON.stringify(
           inPlaceValue
@@ -293,27 +310,24 @@ class UsernameUpdaterBot extends BotBase {
   }
 }
 
-function createFileUserData(channel: string): UserData<PerUserData> {
-  const data = new FileUserData<PerUserData>(
-    onReadUserData,
-    `data/private/${channel}/table.json`
-  );
+function createFileUserData(channel: string): UserData<UserDatum> {
+  const data = new FileUserData(`data/private/${channel}/table.json`);
   return data;
 }
 
-function createMemoryUserData(channel: string): UserData<PerUserData> {
-  const data = new MemoryUserData<PerUserData>(onReadUserData, {});
+function createMemoryUserData(channel: string): UserData<UserDatum> {
+  const data = new MemoryUserData({});
   return data;
 }
 
-class BotManager {
-  botFactory: (channel: string, userData: UserData<PerUserData>) => Bot;
-  userDataFactory: (channel: string) => UserData<PerUserData>;
+class BotManager<U extends UserDatum> {
+  botFactory: (channel: string, userData: UserData<U>) => Bot;
+  userDataFactory: (channel: string) => UserData<U>;
   theBots: { [channel: string]: Bot } = {};
 
   constructor(
-    botFactory: (channel: string, userData: UserData<PerUserData>) => Bot,
-    userDataFactory: (channel: string) => UserData<PerUserData>
+    botFactory: (channel: string, userData: UserData<U>) => Bot,
+    userDataFactory: (channel: string) => UserData<U>
   ) {
     this.botFactory = botFactory;
     this.userDataFactory = userDataFactory;
@@ -335,18 +349,17 @@ function isPrimitive(value: any): boolean {
 }
 
 function isRaw(value: any): boolean {
-  return value instanceof Map || value instanceof Set || value.constructor === Object;
+  return (
+    value instanceof Map || value instanceof Set || value.constructor === Object
+  );
 }
 
 function createConfigurableBotFactory(
   botUsername: string,
   configPath: string
-): (channel: string, userData: UserData<PerUserData>) => Bot {
-  return (channel: string, userData: UserData<PerUserData>) => {
-    ConfigurableRegistry.register(
-      "BotUsername",
-      () => botUsername
-    );
+): (channel: string, userData: UserData<UserDatum>) => Bot {
+  return (channel: string, userData: UserData<UserDatum>) => {
+    ConfigurableRegistry.register("BotUsername", () => botUsername);
     ConfigurableRegistry.register("UserData", () => userData);
     const config = yaml.parse(
       fs.readFileSync(configPath, "utf8"),
@@ -375,7 +388,9 @@ function createConfigurableBotFactory(
         if ("name" in newObj) {
           const name = newObj["name"];
           if (typeof name !== "string") {
-            throw new Error(`Invalid config for ${name} - name must be a string`);
+            throw new Error(
+              `Invalid config for ${name} - name must be a string`
+            );
           }
           const ctor = ConfigurableRegistry.get(name);
           if (ctor === undefined) {

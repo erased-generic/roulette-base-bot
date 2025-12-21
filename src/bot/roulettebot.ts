@@ -4,7 +4,7 @@ import * as rouletteModule from "../util/roulette";
 import {
   BotHandler,
   ChatContext,
-  ConfigFromGet,
+  MappedSchemaFromGet,
   ConfigName,
   Configurable,
 } from "../util/interfaces";
@@ -71,7 +71,7 @@ class RouletteBot extends BotBase implements Configurable {
 
   readonly roulette = new rouletteModule.Roulette(RouletteBot.N_PLACES);
 
-  constructor(config: ConfigFromGet<typeof rouletteBotConfig>) {
+  constructor(config: MappedSchemaFromGet<typeof rouletteBotConfig>) {
     super(config);
   }
 

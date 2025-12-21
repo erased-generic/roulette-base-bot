@@ -1,23 +1,36 @@
 export { UserDatum, UserData, FileUserData, MemoryUserData };
 
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from "fs";
+import * as path from "path";
+import {
+  applySchema,
+  combineSchemas,
+  MappedSchema,
+  Schema,
+} from "./interfaces";
 
-interface UserDatum {
-  username?: string;
-}
+interface UserDatum {}
 
-abstract class UserData<T extends UserDatum> {
-  readonly userData: { [key: string]: T } = {};
-  readonly onReadValue: (userId: string, read: any) => T;
+abstract class UserData<T> {
+  protected readonly userData: { [key: string]: T };
+  private schema: Schema = {};
 
-  constructor(onReadValue: (userId: string, read: any) => T, readUserData: () => any) {
-    this.onReadValue = onReadValue;
-    const parsedData = readUserData();
-    for (const key in parsedData) {
-      const filledData = onReadValue(key, parsedData[key]);
-      this.userData[key] = filledData;
+  constructor(readUserData: () => any) {
+    this.userData = readUserData();
+  }
+
+  withSchema<U extends Schema>(schema: U): UserData<MappedSchema<U>> {
+    this.schema = combineSchemas(this.schema, schema);
+    const self = this as UserData<MappedSchema<U>>;
+    const userData = self.userData;
+    for (const key in userData) {
+      userData[key] = applySchema(userData[key], schema);
     }
+    return self;
+  }
+
+  getDefaultData(): T {
+    return applySchema({}, this.schema) as T;
   }
 
   get(userId: string): T {
@@ -27,10 +40,13 @@ abstract class UserData<T extends UserDatum> {
     return this.update(userId, (inPlaceValue, hadKey) => {});
   }
 
-  update(userId: string, updater: (inPlaceValue: T, hadKey: boolean) => void): T {
+  update(
+    userId: string,
+    updater: (inPlaceValue: T, hadKey: boolean) => void
+  ): T {
     let hadKey = true;
     if (!(userId in this.userData)) {
-      this.userData[userId] = this.onReadValue(userId, {});
+      this.userData[userId] = this.getDefaultData();
       hadKey = false;
     }
     const saved = this.userData[userId];
@@ -46,15 +62,15 @@ abstract class UserData<T extends UserDatum> {
   abstract writeUserData(): void;
 }
 
-class FileUserData<T extends UserDatum> extends UserData<T> {
+class FileUserData extends UserData<UserDatum> {
   readonly filePath: string;
 
-  constructor(onReadValue: (userId: string, read: any) => T, filePath: string) {
-    super(onReadValue, () => {
+  constructor(filePath: string) {
+    super(() => {
       try {
-        return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        return JSON.parse(fs.readFileSync(filePath, "utf8"));
       } catch (e) {
-        if (e.code === 'ENOENT') {
+        if (e.code === "ENOENT") {
           return {};
         }
         throw e;
@@ -65,13 +81,13 @@ class FileUserData<T extends UserDatum> extends UserData<T> {
 
   writeUserData() {
     fs.mkdirSync(path.dirname(this.filePath), { recursive: true });
-    fs.writeFileSync(this.filePath, JSON.stringify(this.userData), 'utf8');
+    fs.writeFileSync(this.filePath, JSON.stringify(this.userData), "utf8");
   }
 }
 
-class MemoryUserData<T extends UserDatum> extends UserData<T> {
-  constructor(onReadValue: (userId: string, read: any) => T, init: any) {
-    super(onReadValue, () => init);
+class MemoryUserData extends UserData<UserDatum> {
+  constructor(init: any) {
+    super(() => init);
   }
 
   writeUserData() {}
