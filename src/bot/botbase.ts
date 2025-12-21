@@ -301,7 +301,7 @@ abstract class BotBase<U extends BaseUserDataSchema = BaseUserDataSchema>
   }
 }
 
-@ConfigName("UsernameUpdaterBot", () => concreteBaseBotConfig)
+@ConfigName("UsernameUpdaterBot", concreteBaseBotConfig)
 class UsernameUpdaterBot extends BotBase {
   handlers: {};
 

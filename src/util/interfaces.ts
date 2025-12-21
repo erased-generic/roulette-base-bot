@@ -211,30 +211,28 @@ interface Configurable {}
 class ConfigurableRegistry {
   private static registry = new Map<
     string,
-    (c: Schema) => Configurable | undefined
+    (c: any) => Configurable | undefined
   >();
   public static register(
     name: string,
-    ctor: (c: Schema) => Configurable | undefined
+    ctor: (c: any) => Configurable | undefined
   ) {
     this.registry.set(name, ctor);
   }
   public static get(
     name: string
-  ): ((c: Schema) => Configurable | undefined) | undefined {
+  ): ((c: any) => Configurable | undefined) | undefined {
     return ConfigurableRegistry.registry.get(name);
   }
 }
 
-function ConfigName<ConfigT extends Schema>(
+function ConfigName<ConfigT extends {}>(
   name: string,
   configSchema: () => ConfigT
 ) {
-  return function <T extends new (c: MappedSchema<ConfigT>) => Configurable>(
-    constructor: T
-  ) {
+  return (constructor: new (c: MappedSchema<ConfigT>) => Configurable) => {
     constructor.prototype.name = name;
-    ConfigurableRegistry.register(name, (c: Schema) => {
+    ConfigurableRegistry.register(name, (c: any) => {
       const defaultC = configSchema();
       const cWithDefaults = applySchema(c, defaultC);
       if (!isValidBySchema(cWithDefaults, defaultC)) {
