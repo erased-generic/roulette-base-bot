@@ -1,6 +1,8 @@
+export { anagramsDuelImplConfig, AnagramsDuelImpl };
+
 import * as anagramsModule from "../util/anagrams";
 import {
-  ChatContext,
+  HandlerContext,
   MappedSchemaFromGet,
   ConfigName,
   Configurable,
@@ -12,8 +14,6 @@ import {
 import { BotBase } from "./botbase";
 import { DuelBot, DuelAccepted, DuelImpl, DuelHandler } from "./duelbot";
 import * as fs from "fs";
-
-export { anagramsDuelImplConfig, AnagramsDuelImpl };
 
 function anagramsDuelImplConfig() {
   return {
@@ -63,6 +63,7 @@ class AnagramsDuelImpl
 
   override printDuelIntro(
     bot: DuelBot,
+    context: HandlerContext,
     duel: DuelAccepted<anagramsModule.Anagrams>
   ): string {
     return "";
@@ -70,6 +71,7 @@ class AnagramsDuelImpl
 
   override printDuelStatus(
     bot: DuelBot,
+    context: HandlerContext,
     duel: DuelAccepted<anagramsModule.Anagrams>,
     moreInfo: boolean
   ): string {
@@ -83,7 +85,7 @@ class AnagramsDuelImpl
         players
           .map(
             (userId) =>
-              `${bot.getUsername(userId)}'s score: ${
+              `${bot.addressUser(context, userId)}'s score: ${
                 duel.payload.scores[userId]
               }`
           )
@@ -95,6 +97,7 @@ class AnagramsDuelImpl
 
   override printDuelPrompt(
     bot: DuelBot,
+    context: HandlerContext,
     duel: DuelAccepted<anagramsModule.Anagrams>,
     moreInfo: boolean
   ): string {
@@ -103,6 +106,7 @@ class AnagramsDuelImpl
 
   override printDuelResult(
     bot: DuelBot,
+    context: HandlerContext,
     duel: DuelAccepted<anagramsModule.Anagrams>,
     moreInfo: boolean,
     result: GameResult
@@ -124,7 +128,7 @@ class AnagramsDuelImpl
 
   getHint(
     bot: DuelBot,
-    context: ChatContext,
+    context: HandlerContext,
     args: string[]
   ): string | undefined {
     const userId = context["user-id"];

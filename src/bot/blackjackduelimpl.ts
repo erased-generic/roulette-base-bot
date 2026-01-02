@@ -1,3 +1,5 @@
+export { blackJackDuelImplConfig, BlackJackDuelImpl };
+
 import * as blackjackModule from "../util/blackjack";
 import {
   MappedSchemaFromGet,
@@ -5,11 +7,10 @@ import {
   Configurable,
   GameBrain,
   GameResult,
+  HandlerContext,
 } from "../util/interfaces";
 import { BotBase } from "./botbase";
 import { DuelBot, DuelAccepted, DuelImpl } from "./duelbot";
-
-export { blackJackDuelImplConfig, BlackJackDuelImpl };
 
 function blackJackDuelImplConfig() {
   return {
@@ -54,13 +55,18 @@ class BlackJackDuelImpl
 
   override printDuelIntro(
     bot: DuelBot,
+    context: HandlerContext,
     duel: DuelAccepted<blackjackModule.BlackJack>
   ): string {
-    return `${bot.getUsername(duel.payload.players[0])} is first to play!`;
+    return `${bot.addressUser(
+      context,
+      duel.payload.players[0]
+    )} is first to play!`;
   }
 
   override printDuelStatus(
     bot: DuelBot,
+    context: HandlerContext,
     duel: DuelAccepted<blackjackModule.BlackJack>,
     moreInfo: boolean
   ): string {
@@ -72,7 +78,7 @@ class BlackJackDuelImpl
       players
         .map(
           (userId) =>
-            `${bot.getUsername(userId)}'s hand: ${duel.payload.hands[
+            `${bot.addressUser(context, userId)}'s hand: ${duel.payload.hands[
               userId
             ].toString()}` +
             `, totaling ${blackjackModule.BlackJack.getBalance(
@@ -87,14 +93,19 @@ class BlackJackDuelImpl
 
   override printDuelPrompt(
     bot: DuelBot,
+    context: HandlerContext,
     duel: DuelAccepted<blackjackModule.BlackJack>,
     moreInfo: boolean
   ): string {
-    return `${bot.getUsername(duel.payload.getCurrentPlayer())}, your move!`;
+    return `${bot.addressUser(
+      context,
+      duel.payload.getCurrentPlayer()
+    )}, your move!`;
   }
 
   override printDuelResult(
     bot: DuelBot,
+    context: HandlerContext,
     duel: DuelAccepted<blackjackModule.BlackJack>,
     moreInfo: boolean,
     result: GameResult

@@ -1,12 +1,14 @@
 import { Trie } from "./trie";
 
 export {
+  HandlerContext,
   ChatContext,
   BotHandler,
   Bot,
   BotContext,
   splitCommand,
   selectHandler,
+  visitHandlers,
   callHandler,
   composeBots,
   formatTime,
@@ -250,8 +252,12 @@ interface ChatContext {
   mod: boolean;
 }
 
+interface HandlerContext extends ChatContext {
+  self: Bot;
+}
+
 interface BotHandler {
-  action: (context: ChatContext, args: string[]) => string | undefined;
+  action: (context: HandlerContext, args: string[]) => string | undefined;
   description: string;
   format: string;
 }
@@ -265,8 +271,35 @@ interface Bot {
   readonly handlers: { [key: string]: BotHandler };
   handlersTrie: Trie<string, BotHandler>;
 
-  onHandlerCalled(context: ChatContext, args: string[]): void;
+  onHandlerCalled(context: HandlerContext, args: string[]): void;
   getContext(): BotContext;
+}
+
+function isCommandPrivate(cmd: string) {
+  return cmd.startsWith("_");
+}
+
+function visitHandlers(
+  bot: Bot,
+  keys: Iterable<string>,
+  skipPredicate: (cmd: string) => boolean,
+  visitor: (cmd: string, value: BotHandler) => boolean
+) {
+  bot.handlersTrie.visit(keys, (path, value) => {
+    const cmd = path.join("");
+    if (skipPredicate(cmd)) {
+      return true;
+    }
+    return visitor(cmd, value);
+  });
+}
+
+function visitPublicHandlers(
+  bot: Bot,
+  keys: Iterable<string>,
+  visitor: (cmd: string, value: BotHandler) => boolean
+) {
+  visitHandlers(bot, keys, isCommandPrivate, visitor);
 }
 
 function splitCommand(command: string) {
@@ -283,10 +316,9 @@ function selectHandler(
   const args = splitCommand(command);
   const key = args[0].substring(bot.getContext().cmdMarker.length);
   const handlers: [string, BotHandler][] = [];
-  bot.handlersTrie.visit(key, (path, value) => {
-    const cmd = path.join("");
-    handlers.push([path.join(""), value]);
-    return cmd !== key; // Stop at exact match
+  visitPublicHandlers(bot, key, (cmd, value) => {
+    handlers.push([cmd, value]);
+    return cmd !== key;
   });
   if (handlers.length !== 1) {
     return { key, args };
@@ -300,9 +332,10 @@ function callHandler(
   context: ChatContext,
   args: string[]
 ): string | undefined {
-  bot.onHandlerCalled(context, args);
+  const handlerCtx = { ...context, self: bot };
+  bot.onHandlerCalled(handlerCtx, args);
   return handler
-    .action(context, args)
+    .action(handlerCtx, args)
     ?.replace("%{format}", `${args[0]} ${handler.format}`);
 }
 
@@ -311,14 +344,13 @@ function composeBots(bots: Bot[]): Bot {
   const handlers = {
     ...bots.reduce((acc, bot) => ({ ...acc, ...bot.handlers }), {}),
     help: {
-      action: (context: ChatContext, args: string[]) => {
+      action: (context: HandlerContext, args: string[]) => {
         const handlers: [string, BotHandler][] = [];
         const key = args.length > 1 ? args[1] : "";
         let exactMatch = false;
         let cmds = ""; // list commands when multiple matches are found
         let desc: string | undefined = undefined; // describe the command, if there's an exact match or only one match
-        bot.handlersTrie.visit(key, (path, handler) => {
-          const cmd = path.join("");
+        visitPublicHandlers(bot, key, (cmd, handler) => {
           if (cmd === key) {
             exactMatch = true;
           }

@@ -11,6 +11,7 @@ export {
   BaseUserDataSchema,
   baseBotConfigU,
   baseBotConfig,
+  PredefinedHandler,
 };
 
 import {
@@ -23,7 +24,7 @@ import {
   Bot,
   BotContext,
   BotHandler,
-  ChatContext,
+  HandlerContext,
   composeBots,
   Schema,
   MappedSchemaFromGet,
@@ -32,11 +33,9 @@ import {
   ConfigurableRegistry,
   noDefaultValue,
   isValidBySchema,
-  MappedSchemaElement,
   MappedSchema,
   optionalValue,
-  OptionalValue,
-  applySchema,
+  callHandler,
 } from "../util/interfaces";
 import { RouletteBase } from "../util/roulette";
 import Fraction from "fraction.js";
@@ -65,8 +64,6 @@ class BotBaseContext implements BotContext, Configurable {
 function baseUserData() {
   return {
     username: optionalValue(String),
-    balance: 100,
-    reservedBalance: 0,
   };
 }
 
@@ -95,6 +92,26 @@ function baseBotConfig<T extends Schema>(configSchema: T) {
 function concreteBaseBotConfig() {
   return baseBotConfig({} as Schema);
 }
+
+enum PredefinedHandler {
+  GetBalance = "_getBalance",
+  ReserveBalance = "_reserveBalance",
+  UpdateBalance = "_updateBalance",
+  AddressUser = "_addressUser",
+}
+
+const PredefinedHandlers = {
+  [PredefinedHandler.GetBalance]: { userId: noDefaultValue(String) },
+  [PredefinedHandler.ReserveBalance]: {
+    userId: noDefaultValue(String),
+    amount: noDefaultValue(Number),
+  },
+  [PredefinedHandler.UpdateBalance]: {
+    userId: noDefaultValue(String),
+    amount: noDefaultValue(Number),
+  },
+  [PredefinedHandler.AddressUser]: { userId: noDefaultValue(String) },
+};
 
 abstract class BotBase<U extends BaseUserDataSchema = BaseUserDataSchema>
   implements Bot, Configurable
@@ -125,7 +142,7 @@ abstract class BotBase<U extends BaseUserDataSchema = BaseUserDataSchema>
     });
   }
 
-  abstract onHandlerCalled(context: ChatContext, args: string[]): void;
+  onHandlerCalled(context: HandlerContext, args: string[]): void {}
 
   getContext(): BotContext {
     return this.botContext;
@@ -164,77 +181,147 @@ abstract class BotBase<U extends BaseUserDataSchema = BaseUserDataSchema>
     return amount;
   }
 
-  updateUsername(context: ChatContext) {
-    this.getUserData().get(context["user-id"]).username =
-      context.username ?? "abc";
+  protected callHandler<H extends PredefinedHandler>(
+    context: HandlerContext,
+    handlerName: H,
+    args: MappedSchema<(typeof PredefinedHandlers)[H]>
+  ): string | undefined {
+    const toCall = context.self.handlers[handlerName];
+    if (toCall === undefined) {
+      console.log(`* no handler for predefined ${handlerName}`);
+      return undefined;
+    }
+    return callHandler(context.self, toCall, context, [
+      `${this.botContext.cmdMarker}${handlerName}`,
+      JSON.stringify(args),
+    ]);
   }
 
-  getUsername(userId: string) {
+  protected static toHandler<H extends PredefinedHandler>(
+    handlerName: H,
+    method: (
+      ctx: HandlerContext,
+      args: MappedSchema<(typeof PredefinedHandlers)[H]>
+    ) => unknown
+  ): [H, BotHandler] {
+    const schema = PredefinedHandlers[handlerName];
+    return [
+      handlerName,
+      {
+        action: (context: HandlerContext, args: string[]) => {
+          if (args.length < 2) {
+            console.log(
+              `* invalid args length for predefined ${handlerName}: ${args}`
+            );
+            return undefined;
+          }
+          const parsedArgs = JSON.parse(args[1]);
+          if (!isValidBySchema(parsedArgs, schema)) {
+            console.log(
+              `* invalid args for predefined ${handlerName}: ${args}`
+            );
+            return undefined;
+          }
+          return method(context, parsedArgs)?.toString();
+        },
+        description: "",
+        format: "",
+      },
+    ];
+  }
+
+  addressUser(context: HandlerContext, userId?: string): string {
+    const user = userId ?? context["user-id"];
+    return (
+      this.callHandler(context, PredefinedHandler.AddressUser, {
+        userId: user,
+      }) ??
+      this.getUsername(context, user) ??
+      user
+    );
+    // TODO: replace all addressing to users with this method
+    // TODO: think about moving balance handling to a separate bot as well
+  }
+
+  updateUsername(context: HandlerContext) {
+    this.getUserData().update(context["user-id"], (inPlaceValue) => {
+      inPlaceValue.username = context.username;
+    });
+  }
+
+  public getUsername(context: HandlerContext, userId: string) {
     return this.getUserData().get(userId).username?.toString();
   }
 
-  protected getBalanceInfo(
-    info: MappedSchemaFromGet<typeof baseUserData>
-  ): number {
-    return info.balance - info.reservedBalance;
+  protected getBalance(context: HandlerContext, userId: string): number {
+    return Number(
+      this.callHandler(context, PredefinedHandler.GetBalance, { userId })
+    );
   }
 
-  protected getBalance(userId: string): number {
-    const info = this.getUserData().get(userId);
-    return this.getBalanceInfo(info);
-  }
-
-  protected reserveBalance(userId: string, amount: number) {
-    this.getUserData().update(userId, (inPlaceValue, hadKey) => {
-      console.log(
-        `* reserveBalance: ${userId}, ${
-          inPlaceValue.username
-        }, ${JSON.stringify(inPlaceValue)}, ${amount}`
-      );
-      inPlaceValue.reservedBalance += amount;
+  protected reserveBalance(
+    context: HandlerContext,
+    userId: string,
+    amount: number
+  ) {
+    this.callHandler(context, PredefinedHandler.ReserveBalance, {
+      userId,
+      amount,
     });
   }
 
   protected ensureBalance(
+    context: HandlerContext,
     userId: string,
     amount: number,
     extraReserveLimit?: number
   ): number | string {
-    const info = this.getUserData().get(userId);
     if (amount <= 0) {
-      return `You can bet only a positive amount of points, ${info.username}!`;
+      return `You can bet only a positive amount of points, ${this.addressUser(
+        context,
+        userId
+      )}!`;
     }
-    const balance = this.getBalance(userId) + (extraReserveLimit ?? 0);
+    const balance = this.getBalance(context, userId) + (extraReserveLimit ?? 0);
     amount = isNaN(amount) ? balance : amount;
-    if (amount > balance) {
-      return `You don't have that many points, ${info.username}!`;
+    if (!(amount <= balance)) {
+      return `You don't have that many points, ${this.addressUser(
+        context,
+        userId
+      )}!`;
     }
-    this.reserveBalance(userId, amount - (extraReserveLimit ?? 0));
+    this.reserveBalance(context, userId, amount - (extraReserveLimit ?? 0));
     return amount;
   }
 
+  protected updateBalance(
+    context: HandlerContext,
+    userId: string,
+    amount: number
+  ): number {
+    return Number(
+      this.callHandler(context, PredefinedHandler.UpdateBalance, {
+        userId,
+        amount,
+      })
+    );
+  }
+
   protected commitBalance(
+    context: HandlerContext,
     userId: string,
     reservedAmount: number,
     balanceAmount: number
   ): number {
-    const botData = this.getUserData().get(this.botContext.botUsername);
-    return this.getUserData().update(userId, (inPlaceValue, hadKey) => {
-      console.log(
-        `* balance: ${userId}, ${this.getUsername(userId)}, ${JSON.stringify(
-          inPlaceValue
-        )}, ${reservedAmount}, ${balanceAmount}`
-      );
-      inPlaceValue.reservedBalance -= reservedAmount;
-      inPlaceValue.balance += balanceAmount;
-      // NOTE: direct update of UserData here
-      botData.balance -= balanceAmount;
-    }).balance;
+    this.reserveBalance(context, userId, -reservedAmount);
+    this.updateBalance(context, this.botContext.botUsername, -balanceAmount);
+    return this.updateBalance(context, userId, balanceAmount);
   }
 
   protected createWinningsCallback(
+    context: HandlerContext,
     message: (
-      username: string | undefined,
+      userId: string,
       didWin: boolean,
       payout: number,
       percent: number,
@@ -249,24 +336,25 @@ abstract class BotBase<U extends BaseUserDataSchema = BaseUserDataSchema>
       payout: Fraction
     ) => {
       let actualPayout = payout.floor().valueOf();
-      const balance = this.commitBalance(playerId, amount, actualPayout);
-      return message(
-        this.getUsername(playerId),
-        didWin,
-        actualPayout,
-        chance,
-        balance
+      const balance = this.commitBalance(
+        context,
+        playerId,
+        amount,
+        actualPayout
       );
+      return message(playerId, didWin, actualPayout, chance, balance);
     };
   }
 
   protected bet(
+    context: HandlerContext,
     rouletteBase: RouletteBase,
     userId: string,
     amount: number,
     numbers: number[]
   ): number | string {
     const ensured = this.ensureBalance(
+      context,
       userId,
       amount,
       rouletteBase.getBet(userId)
@@ -278,17 +366,21 @@ abstract class BotBase<U extends BaseUserDataSchema = BaseUserDataSchema>
     return ensured;
   }
 
-  protected unbet(rouletteBase: RouletteBase, userId: string) {
+  protected unbet(
+    context: HandlerContext,
+    rouletteBase: RouletteBase,
+    userId: string
+  ) {
     const prevBet = rouletteBase.getBet(userId);
     if (prevBet !== undefined) {
-      this.reserveBalance(userId, -prevBet);
+      this.reserveBalance(context, userId, -prevBet);
     }
     rouletteBase.unplaceBet(userId);
   }
 
-  protected unbetAll(rouletteBase: RouletteBase) {
+  protected unbetAll(context: HandlerContext, rouletteBase: RouletteBase) {
     for (const userId in rouletteBase.bets) {
-      this.unbet(rouletteBase, userId);
+      this.unbet(context, rouletteBase, userId);
     }
     rouletteBase.reset();
   }
@@ -305,7 +397,7 @@ abstract class BotBase<U extends BaseUserDataSchema = BaseUserDataSchema>
 class UsernameUpdaterBot extends BotBase {
   handlers: {};
 
-  onHandlerCalled(context: ChatContext, args: string[]): void {
+  override onHandlerCalled(context: HandlerContext, args: string[]): void {
     this.updateUsername(context);
   }
 }

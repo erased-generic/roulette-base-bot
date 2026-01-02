@@ -4,7 +4,6 @@ import { ChatContext } from "../../src/util/interfaces";
 import {
   createTestBot,
   createTestBotConfig,
-  createTestUserData,
   instanceTestHandler,
 } from "./utils";
 import { BlackJackDuelImpl } from "../../src/bot/blackjackduelimpl";

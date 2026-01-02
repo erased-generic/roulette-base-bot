@@ -6,10 +6,11 @@ import {
 } from "../../src/bot/duelbot";
 import { BlackJackDuelImpl } from "../../src/bot/blackjackduelimpl";
 import {
-  ChatContext,
+  HandlerContext,
   Game,
   GameBrain,
   GameResult,
+  ChatContext,
 } from "../../src/util/interfaces";
 import {
   BlackJack,
@@ -75,11 +76,16 @@ class TestDuelImpl extends DuelImpl<TestGame> {
   };
   readonly gameBrain?: GameBrain<TestGame> = undefined;
 
-  printDuelIntro(bot: DuelBot, duel: DuelAccepted<TestGame>): string {
+  printDuelIntro(
+    bot: DuelBot,
+    context: HandlerContext,
+    duel: DuelAccepted<TestGame>
+  ): string {
     return "test duel intro";
   }
   printDuelStatus(
     bot: DuelBot,
+    context: HandlerContext,
     duel: DuelAccepted<TestGame>,
     moreInfo: boolean
   ): string {
@@ -87,6 +93,7 @@ class TestDuelImpl extends DuelImpl<TestGame> {
   }
   printDuelPrompt(
     bot: DuelBot,
+    context: HandlerContext,
     duel: DuelAccepted<TestGame>,
     moreInfo: boolean
   ): string {
@@ -94,6 +101,7 @@ class TestDuelImpl extends DuelImpl<TestGame> {
   }
   printDuelResult(
     bot: DuelBot,
+    context: HandlerContext,
     duel: DuelAccepted<TestGame>,
     moreInfo: boolean,
     result: GameResult

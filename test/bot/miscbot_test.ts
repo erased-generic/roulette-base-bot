@@ -1,5 +1,5 @@
 import { MiscBot } from "../../src/bot/miscbot";
-import { ChatContext } from "../../src/util/interfaces";
+import { ChatContext, HandlerContext } from "../../src/util/interfaces";
 import {
   createTestBot,
   createTestBotConfig,

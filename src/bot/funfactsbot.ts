@@ -1,9 +1,8 @@
 export { FunFactsBot };
 
-import { UserData } from "../util/userdata";
 import {
   BotHandler,
-  ChatContext,
+  HandlerContext,
   MappedSchemaFromGet,
   ConfigName,
   Configurable,
@@ -45,16 +44,19 @@ class FunFactsBot extends BotBase implements Configurable {
     })();
   }
 
-  onHandlerCalled(context: ChatContext, args: string[]): void {}
-
-  factHandler(context: ChatContext, args: string[]): string | undefined {
+  factHandler(context: HandlerContext, args: string[]): string | undefined {
     // Buy a fun fact
     const userId = context["user-id"];
-    const ensured = this.ensureBalance(userId, FunFactsBot.FACT_PRICE);
+    const ensured = this.ensureBalance(context, userId, FunFactsBot.FACT_PRICE);
     if (typeof ensured === "string") {
       return `Fun fact: ${ensured}`;
     }
-    this.commitBalance(userId, FunFactsBot.FACT_PRICE, -FunFactsBot.FACT_PRICE);
+    this.commitBalance(
+      context,
+      userId,
+      FunFactsBot.FACT_PRICE,
+      -FunFactsBot.FACT_PRICE
+    );
     console.log(`* funfact: ${userId}, ${context.username}`);
     if (this.facts.length > 0) {
       return `Fun fact: ${

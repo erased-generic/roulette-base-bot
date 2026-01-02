@@ -22,17 +22,15 @@ import {
   splitCommand,
 } from "../../src/util/interfaces";
 import {
-  BaseUserDataSchema,
   BotBaseContext,
   UsernameUpdaterBot,
   concreteBaseBotConfig,
 } from "../../src/bot/botbase";
-import { MemoryUserData, UserData, UserDatum } from "../../src/util/userdata";
+import { MemoryUserData, UserData } from "../../src/util/userdata";
 import {
   BalanceBot,
   balanceBotConfig,
   balanceBotUserData,
-  BalanceUserDataSchema,
 } from "../../src/bot/balancebot";
 
 function testUserData() {
@@ -101,7 +99,7 @@ function instanceTestHandler(
 }
 
 function setBalance(
-  userData: UserData<MappedSchema<BaseUserDataSchema>>,
+  userData: UserData<MappedSchema<TestUserDataSchema>>,
   userId: string,
   balance: number
 ) {
@@ -109,7 +107,7 @@ function setBalance(
 }
 
 function setBalanceNoReserved(
-  userData: UserData<MappedSchema<BaseUserDataSchema>>,
+  userData: UserData<MappedSchema<TestUserDataSchema>>,
   userId: string,
   balance: number
 ) {

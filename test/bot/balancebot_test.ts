@@ -1,10 +1,12 @@
-import { ChatContext } from "../../src/util/interfaces";
+import assert from "assert";
+import { ChatContext, selectHandler } from "../../src/util/interfaces";
 import {
   createTestBot,
   createTestBotConfig,
   instanceTestHandler,
   setBalanceNoReserved,
 } from "./utils";
+import { PredefinedHandler } from "../../src/bot/botbase";
 
 // Test the bot itself
 const config = createTestBotConfig();
@@ -70,3 +72,19 @@ testHandler(
   /Top 1 richest people in our chat: test2 with 300 points/
 );
 testHandler(testChatContext, "!leaderboard asda", /error/);
+
+// check that balance manipulation methods are actually private
+assert.strictEqual(
+  selectHandler(instance, `!${PredefinedHandler.ReserveBalance} test 100`)
+    ?.handler,
+  undefined
+);
+assert.strictEqual(
+  selectHandler(instance, `!${PredefinedHandler.UpdateBalance} test 100`)
+    ?.handler,
+  undefined
+);
+assert.strictEqual(
+  selectHandler(instance, `!${PredefinedHandler.GetBalance} test`)?.handler,
+  undefined
+);

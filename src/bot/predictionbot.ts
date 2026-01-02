@@ -3,7 +3,7 @@ export { PredictCommand, PredictionBot };
 import * as rouletteModule from "../util/roulette";
 import {
   BotHandler,
-  ChatContext,
+  HandlerContext,
   MappedSchemaFromGet,
   ConfigName,
   Configurable,
@@ -74,8 +74,6 @@ class PredictionBot extends BotBase implements Configurable {
     this.prediction = new rouletteModule.Prediction(this.n_places);
   }
 
-  onHandlerCalled(context: ChatContext, args: string[]): void {}
-
   static parsePredictCommand(
     tokens: string[],
     all_places: number[]
@@ -102,7 +100,7 @@ class PredictionBot extends BotBase implements Configurable {
     return { predictNumber: parsed[0], amount };
   }
 
-  predictHandler(context: ChatContext, args: string[]): string | undefined {
+  predictHandler(context: HandlerContext, args: string[]): string | undefined {
     const userId = context["user-id"];
     if (!this.predictionOpen) {
       return `Predictions are closed, ${context["username"]}!`;
@@ -114,9 +112,13 @@ class PredictionBot extends BotBase implements Configurable {
     if (typeof predictCommand === "string") {
       return `Parse error: ${predictCommand}, try %{format}, ${context["username"]}!`;
     }
-    const amount = this.bet(this.prediction, userId, predictCommand.amount, [
-      predictCommand.predictNumber,
-    ]);
+    const amount = this.bet(
+      context,
+      this.prediction,
+      userId,
+      predictCommand.amount,
+      [predictCommand.predictNumber]
+    );
     if (typeof amount === "string") {
       return amount;
     }
@@ -126,18 +128,21 @@ class PredictionBot extends BotBase implements Configurable {
     return `${context.username} predicted ${predictCommand.predictNumber} with ${amount} points!`;
   }
 
-  unpredictHandler(context: ChatContext, args: string[]): string | undefined {
+  unpredictHandler(
+    context: HandlerContext,
+    args: string[]
+  ): string | undefined {
     if (!this.predictionOpen) {
       return `Predictions are closed, ${context["username"]}!`;
     }
     const userId = context["user-id"];
-    this.unbet(this.prediction, userId);
+    this.unbet(context, this.prediction, userId);
     console.log(`* unpredict: ${userId}, ${context.username}`);
     return `${context.username} is not predicting anymore!`;
   }
 
   predictStatusHandler(
-    context: ChatContext,
+    context: HandlerContext,
     args: string[]
   ): string | undefined {
     const chances = this.prediction.allNumberChances();
@@ -161,18 +166,18 @@ class PredictionBot extends BotBase implements Configurable {
     return msg;
   }
 
-  refundHandler(context: ChatContext, args: string[]): string | undefined {
+  refundHandler(context: HandlerContext, args: string[]): string | undefined {
     if (!context.mod) {
       return `Peasant ${context["username"]}, you can't refund a prediction!`;
     }
     this.predictionOpen = false;
-    this.unbetAll(this.prediction);
+    this.unbetAll(context, this.prediction);
     console.log(`* refund`);
     return `An honorable mod has refunded the prediction!`;
   }
 
   openPredictionHandler(
-    context: ChatContext,
+    context: HandlerContext,
     args: string[]
   ): string | undefined {
     if (!context.mod) {
@@ -184,7 +189,7 @@ class PredictionBot extends BotBase implements Configurable {
   }
 
   closePredictionHandler(
-    context: ChatContext,
+    context: HandlerContext,
     args: string[]
   ): string | undefined {
     if (!context.mod) {
@@ -195,7 +200,7 @@ class PredictionBot extends BotBase implements Configurable {
     return `An honorable mod has closed the prediction!`;
   }
 
-  outcomeHandler(context: ChatContext, args: string[]): string | undefined {
+  outcomeHandler(context: HandlerContext, args: string[]): string | undefined {
     if (!context.mod) {
       return `Peasant ${context["username"]}, you can't select a prediction outcome!`;
     }
@@ -221,13 +226,15 @@ class PredictionBot extends BotBase implements Configurable {
     this.prediction.winningNumber = number[0];
     msg += `Prediction resulted in outcome '${number}'`;
     const callback = this.createWinningsCallback(
+      context,
       (
-        username: string | undefined,
+        userId: string,
         didWin: boolean,
         delta: number,
         chance: number,
         balance: number
       ) => {
+        const username = this.addressUser(context, userId);
         if (didWin) {
           return `${username} won ${delta} points (coef ${
             Math.round(100 * (1 / chance - 1)) / 100
@@ -248,7 +255,10 @@ class PredictionBot extends BotBase implements Configurable {
         payout: Fraction
       ) => {
         console.log(
-          `* outcome: ${playerId}, ${this.getUsername(playerId)}, ${payout}`
+          `* outcome: ${playerId}, ${this.getUsername(
+            context,
+            playerId
+          )}, ${payout}`
         );
         msg += ", " + callback(playerId, didWin, chance, amount, payout);
       }

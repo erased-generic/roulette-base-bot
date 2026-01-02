@@ -7,7 +7,7 @@ export {
 
 import {
   BotHandler,
-  ChatContext,
+  HandlerContext,
   MappedSchemaFromGet,
   ConfigName,
   Configurable,
@@ -15,16 +15,18 @@ import {
   combineSchemas,
   optionalValue,
 } from "../util/interfaces";
-import { UserData, UserDatum } from "../util/userdata";
 import {
   baseBotConfig,
   baseBotConfigU,
   baseUserData,
   BotBase,
+  PredefinedHandler,
 } from "./botbase";
 
 function balanceBotUserData() {
   return combineSchemas(baseUserData(), {
+    balance: 100,
+    reservedBalance: 0,
     lastClaim: optionalValue(Number),
   });
 }
@@ -76,15 +78,27 @@ class BalanceBot
       description: "View the leaderboard, sorted by the amount of points",
       format: `[<number of entries to show>]=${BalanceBot.DEFAULT_BOARD_SIZE}`,
     },
+    ...Object.fromEntries([
+      BotBase.toHandler(
+        PredefinedHandler.ReserveBalance,
+        this.reserveBalanceImpl.bind(this)
+      ),
+      BotBase.toHandler(
+        PredefinedHandler.UpdateBalance,
+        this.updateBalanceImpl.bind(this)
+      ),
+      BotBase.toHandler(
+        PredefinedHandler.GetBalance,
+        this.getBalanceImpl.bind(this)
+      ),
+    ]),
   };
 
   constructor(config: MappedSchemaFromGet<typeof balanceBotConfig>) {
     super(config);
   }
 
-  onHandlerCalled(context: ChatContext, args: string[]): void {}
-
-  pointsHandler(context: ChatContext, args: string[]): string | undefined {
+  pointsHandler(context: HandlerContext, args: string[]): string | undefined {
     // Print the user's points
     const userId = context["user-id"];
     const info = this.userData.get(userId);
@@ -96,7 +110,7 @@ class BalanceBot
     return msg + `, ${context["username"]}!`;
   }
 
-  budgetHandler(context: ChatContext, args: string[]): string | undefined {
+  budgetHandler(context: HandlerContext, args: string[]): string | undefined {
     // Print the bot's points
     const info = this.userData.get(this.botContext.botUsername);
 
@@ -107,7 +121,7 @@ class BalanceBot
     return msg;
   }
 
-  doClaim(context: ChatContext, chance: number): string | undefined {
+  doClaim(context: HandlerContext, chance: number): string | undefined {
     // Claim 100 points per 30 minutes
     // If `Math.rand() < chance`, double or half your balance
     const claimSize = BalanceBot.CLAIM_SIZE;
@@ -126,7 +140,7 @@ class BalanceBot
       }
     }
     let msg = ``;
-    let balance = this.getBalance(userId);
+    let balance = this.getBalance(context, userId);
     let delta = claimSize;
     const trickery = Math.random();
     const trickery2 = Math.random();
@@ -157,14 +171,14 @@ class BalanceBot
     );
   }
 
-  claimHandler(context: ChatContext, args: string[]): string | undefined {
+  claimHandler(context: HandlerContext, args: string[]): string | undefined {
     return this.doClaim(
       context,
       BalanceBot.CLAIM_TRICKERY_CHANCE_PERCENT / 100
     );
   }
 
-  claimeHandler(context: ChatContext, args: string[]): string | undefined {
+  claimeHandler(context: HandlerContext, args: string[]): string | undefined {
     if (args.length < 2) {
       return this.doClaim(
         context,
@@ -178,7 +192,10 @@ class BalanceBot
     return this.doClaim(context, chance / 100);
   }
 
-  leaderboardHandler(context: ChatContext, args: string[]): string | undefined {
+  leaderboardHandler(
+    context: HandlerContext,
+    args: string[]
+  ): string | undefined {
     let boardSize = BalanceBot.DEFAULT_BOARD_SIZE;
     if (args.length > 1) {
       boardSize = parseInt(args[1]);
@@ -199,5 +216,49 @@ class BalanceBot
         .join(";\n") +
       "."
     );
+  }
+
+  private reserveBalanceImpl(
+    context: HandlerContext,
+    args: { userId: String; amount: Number }
+  ): void {
+    this.userData.update(args.userId.toString(), (inPlaceValue, hadKey) => {
+      console.log(
+        `* reserveBalance: ${args.userId}, ${
+          inPlaceValue.username
+        }, ${JSON.stringify(inPlaceValue)}, ${args.amount}`
+      );
+      inPlaceValue.reservedBalance += args.amount.valueOf();
+    });
+  }
+
+  private updateBalanceImpl(
+    context: HandlerContext,
+    args: { userId: String; amount: Number }
+  ): number {
+    return this.userData.update(
+      args.userId.toString(),
+      (inPlaceValue, hadKey) => {
+        console.log(
+          `* updateBalance: ${args.userId}, ${
+            inPlaceValue.username
+          }, ${JSON.stringify(inPlaceValue)}, ${args.amount}`
+        );
+        inPlaceValue.balance += args.amount.valueOf();
+      }
+    ).balance;
+  }
+
+  private getBalanceImpl(
+    context: HandlerContext,
+    args: { userId: String }
+  ): number {
+    const data = this.userData.get(args.userId.toString());
+    console.log(
+      `* getBalance: ${args.userId}, ${context.username}, ${JSON.stringify(
+        data
+      )}`
+    );
+    return data.balance - data.reservedBalance;
   }
 }

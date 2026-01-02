@@ -7,6 +7,7 @@ import {
   GameResult,
   noDefaultValue,
   RejectingBrain,
+  HandlerContext,
 } from "../util/interfaces";
 import { BotBase } from "./botbase";
 import { DuelBot, DuelAccepted, DuelImpl, DuelHandler } from "./duelbot";
@@ -67,6 +68,7 @@ class WordleDuelImpl
 
   override printDuelIntro(
     bot: DuelBot,
+    context: HandlerContext,
     duel: DuelAccepted<wordleModule.Wordle>
   ): string {
     return `Legend: ${wordleModule.Wordle.renderLetterState(
@@ -83,6 +85,7 @@ class WordleDuelImpl
 
   override printDuelStatus(
     bot: DuelBot,
+    context: HandlerContext,
     duel: DuelAccepted<wordleModule.Wordle>,
     moreInfo: boolean
   ): string {
@@ -108,6 +111,7 @@ class WordleDuelImpl
 
   override printDuelPrompt(
     bot: DuelBot,
+    context: HandlerContext,
     duel: DuelAccepted<wordleModule.Wordle>,
     moreInfo: boolean
   ): string {
@@ -116,6 +120,7 @@ class WordleDuelImpl
 
   override printDuelResult(
     bot: DuelBot,
+    context: HandlerContext,
     duel: DuelAccepted<wordleModule.Wordle>,
     moreInfo: boolean,
     result: GameResult

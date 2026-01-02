@@ -3,7 +3,7 @@ export { BetCommand, RouletteBot };
 import * as rouletteModule from "../util/roulette";
 import {
   BotHandler,
-  ChatContext,
+  HandlerContext,
   MappedSchemaFromGet,
   ConfigName,
   Configurable,
@@ -75,7 +75,7 @@ class RouletteBot extends BotBase implements Configurable {
     super(config);
   }
 
-  onHandlerCalled(context: ChatContext, args: string[]): void {}
+  onHandlerCalled(context: HandlerContext, args: string[]): void {}
 
   static parseBetCommand(tokens: string[]): BetCommand | string {
     let betNumbers: number[] = [],
@@ -176,7 +176,7 @@ class RouletteBot extends BotBase implements Configurable {
     return { betNumbers, betName, amount };
   }
 
-  betHandler(context: ChatContext, args: string[]): string | undefined {
+  betHandler(context: HandlerContext, args: string[]): string | undefined {
     // Place a bet
     const userId = context["user-id"];
     const betCommand = RouletteBot.parseBetCommand(args);
@@ -184,6 +184,7 @@ class RouletteBot extends BotBase implements Configurable {
       return `Parse error: ${betCommand}, try %{format}, ${context["username"]}!`;
     }
     const amount = this.bet(
+      context,
       this.roulette,
       userId,
       betCommand.amount,
@@ -198,34 +199,36 @@ class RouletteBot extends BotBase implements Configurable {
     return `${context.username} placed a bet of ${amount} on ${betCommand.betName}!`;
   }
 
-  betsHandler(context: ChatContext, args: string[]): string | undefined {
+  betsHandler(context: HandlerContext, args: string[]): string | undefined {
     // List all bets
     return `List of predefined bets: ${Object.values(PredefinedBets).join(
       ", "
     )}`;
   }
 
-  unbetHandler(context: ChatContext, args: string[]): string | undefined {
+  unbetHandler(context: HandlerContext, args: string[]): string | undefined {
     // Remove a bet
     const userId = context["user-id"];
-    this.unbet(this.roulette, userId);
+    this.unbet(context, this.roulette, userId);
     console.log(`* unbet: ${userId}, ${context.username}`);
     return `${context.username} is not betting anymore!`;
   }
 
-  rouletteHandler(context: ChatContext, args: string[]): string | undefined {
+  rouletteHandler(context: HandlerContext, args: string[]): string | undefined {
     let msg = "";
     this.roulette.runRoulette();
     // Run the roulette
     msg += `Ball landed on: ${this.roulette.winningNumber}`;
     const callback = this.createWinningsCallback(
+      context,
       (
-        username: string | undefined,
+        userId: string,
         didWin: boolean,
         delta: number,
         chance: number,
         balance: number
       ) => {
+        const username = this.addressUser(context, userId);
         const percent = Math.round(chance * 100);
         if (didWin) {
           return `${username} won ${delta} points with a chance of ${percent}% and now has ${balance} points`;
@@ -245,7 +248,10 @@ class RouletteBot extends BotBase implements Configurable {
         payout: Fraction
       ) => {
         console.log(
-          `* roulette: ${playerId}, ${this.getUsername(playerId)}, ${payout}`
+          `* roulette: ${playerId}, ${this.getUsername(
+            context,
+            playerId
+          )}, ${payout}`
         );
         msg += ", " + callback(playerId, didWin, chance, amount, payout);
       }

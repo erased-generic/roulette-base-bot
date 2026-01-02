@@ -7,7 +7,6 @@ import {
   instanceTestParser,
   setBalanceNoReserved,
 } from "./utils";
-import * as assert from "assert";
 
 function parse(args: string[]) {
   return RouletteBot.parseBetCommand(["", ...args]);

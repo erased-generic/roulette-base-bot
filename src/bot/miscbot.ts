@@ -2,7 +2,7 @@ export { MiscBot };
 
 import {
   BotHandler,
-  ChatContext,
+  HandlerContext,
   ConfigName,
   Configurable,
 } from "../util/interfaces";
@@ -14,7 +14,7 @@ interface MiscAction {
   format: string;
   action: (
     bot: MiscBot,
-    context: ChatContext,
+    context: HandlerContext,
     args: string[]
   ) => string | undefined;
 }
@@ -25,7 +25,7 @@ class PrintTextAction implements MiscAction {
   format: string = "";
   action: (
     bot: MiscBot,
-    context: ChatContext,
+    context: HandlerContext,
     args: string[]
   ) => string | undefined;
 
@@ -103,10 +103,8 @@ class MiscBot extends BotBase implements Configurable {
     ),
   };
 
-  onHandlerCalled(context: ChatContext, args: string[]): void {}
-
   actionHandler(
-    context: ChatContext,
+    context: HandlerContext,
     action: string,
     args: string[]
   ): string | undefined {
@@ -117,11 +115,16 @@ class MiscBot extends BotBase implements Configurable {
     // Buy an action
     const actionPayload = MiscBot.actions[action];
     const userId = context["user-id"];
-    const ensured = this.ensureBalance(userId, actionPayload.price);
+    const ensured = this.ensureBalance(context, userId, actionPayload.price);
     if (typeof ensured === "string") {
       return ensured;
     }
-    this.commitBalance(userId, actionPayload.price, -actionPayload.price);
+    this.commitBalance(
+      context,
+      userId,
+      actionPayload.price,
+      -actionPayload.price
+    );
     console.log(`* action: ${action}, ${userId}, ${context.username}`);
     return actionPayload.action(this, context, args);
   }
