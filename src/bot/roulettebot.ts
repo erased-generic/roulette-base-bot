@@ -181,7 +181,9 @@ class RouletteBot extends BotBase implements Configurable {
     const userId = context["user-id"];
     const betCommand = RouletteBot.parseBetCommand(args);
     if (typeof betCommand === "string") {
-      return `Parse error: ${betCommand}, try %{format}, ${context["username"]}!`;
+      return `Parse error: ${betCommand}, try %{format}, ${this.addressUser(
+        context
+      )}!`;
     }
     const amount = this.bet(
       context,
@@ -196,7 +198,9 @@ class RouletteBot extends BotBase implements Configurable {
     console.log(
       `* bet: ${userId}, ${context.username}, ${betCommand.amount}, ${betCommand.betNumbers}`
     );
-    return `${context.username} placed a bet of ${amount} on ${betCommand.betName}!`;
+    return `${this.addressUser(context)} placed a bet of ${amount} on ${
+      betCommand.betName
+    }!`;
   }
 
   betsHandler(context: HandlerContext, args: string[]): string | undefined {
@@ -211,7 +215,7 @@ class RouletteBot extends BotBase implements Configurable {
     const userId = context["user-id"];
     this.unbet(context, this.roulette, userId);
     console.log(`* unbet: ${userId}, ${context.username}`);
-    return `${context.username} is not betting anymore!`;
+    return `${this.addressUser(context)} is not betting anymore!`;
   }
 
   rouletteHandler(context: HandlerContext, args: string[]): string | undefined {

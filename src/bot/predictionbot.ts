@@ -103,14 +103,16 @@ class PredictionBot extends BotBase implements Configurable {
   predictHandler(context: HandlerContext, args: string[]): string | undefined {
     const userId = context["user-id"];
     if (!this.predictionOpen) {
-      return `Predictions are closed, ${context["username"]}!`;
+      return `Predictions are closed, ${this.addressUser(context)}!`;
     }
     const predictCommand = PredictionBot.parsePredictCommand(
       args,
       this.all_places
     );
     if (typeof predictCommand === "string") {
-      return `Parse error: ${predictCommand}, try %{format}, ${context["username"]}!`;
+      return `Parse error: ${predictCommand}, try %{format}, ${this.addressUser(
+        context
+      )}!`;
     }
     const amount = this.bet(
       context,
@@ -125,7 +127,9 @@ class PredictionBot extends BotBase implements Configurable {
     console.log(
       `* predict: ${userId}, ${context.username}, ${predictCommand.amount}, ${predictCommand.predictNumber}`
     );
-    return `${context.username} predicted ${predictCommand.predictNumber} with ${amount} points!`;
+    return `${this.addressUser(context)} predicted ${
+      predictCommand.predictNumber
+    } with ${amount} points!`;
   }
 
   unpredictHandler(
@@ -133,12 +137,12 @@ class PredictionBot extends BotBase implements Configurable {
     args: string[]
   ): string | undefined {
     if (!this.predictionOpen) {
-      return `Predictions are closed, ${context["username"]}!`;
+      return `Predictions are closed, ${this.addressUser(context)}!`;
     }
     const userId = context["user-id"];
     this.unbet(context, this.prediction, userId);
     console.log(`* unpredict: ${userId}, ${context.username}`);
-    return `${context.username} is not predicting anymore!`;
+    return `${this.addressUser(context)} is not predicting anymore!`;
   }
 
   predictStatusHandler(
@@ -168,7 +172,9 @@ class PredictionBot extends BotBase implements Configurable {
 
   refundHandler(context: HandlerContext, args: string[]): string | undefined {
     if (!context.mod) {
-      return `Peasant ${context["username"]}, you can't refund a prediction!`;
+      return `Peasant ${this.addressUser(
+        context
+      )}, you can't refund a prediction!`;
     }
     this.predictionOpen = false;
     this.unbetAll(context, this.prediction);
@@ -181,7 +187,9 @@ class PredictionBot extends BotBase implements Configurable {
     args: string[]
   ): string | undefined {
     if (!context.mod) {
-      return `Peasant ${context["username"]}, you can't open predictions!`;
+      return `Peasant ${this.addressUser(
+        context
+      )}, you can't open predictions!`;
     }
     this.predictionOpen = true;
     console.log(`* open`);
@@ -193,7 +201,9 @@ class PredictionBot extends BotBase implements Configurable {
     args: string[]
   ): string | undefined {
     if (!context.mod) {
-      return `Peasant ${context["username"]}, you can't close predictions!`;
+      return `Peasant ${this.addressUser(
+        context
+      )}, you can't close predictions!`;
     }
     this.predictionOpen = false;
     console.log(`* close`);
@@ -202,7 +212,9 @@ class PredictionBot extends BotBase implements Configurable {
 
   outcomeHandler(context: HandlerContext, args: string[]): string | undefined {
     if (!context.mod) {
-      return `Peasant ${context["username"]}, you can't select a prediction outcome!`;
+      return `Peasant ${this.addressUser(
+        context
+      )}, you can't select a prediction outcome!`;
     }
 
     let msg = "";
@@ -213,14 +225,20 @@ class PredictionBot extends BotBase implements Configurable {
     }
 
     if (args.length < 2) {
-      return (msg += `Dear mod ${context["username"]}, too few arguments`);
+      return (msg += `Dear mod ${this.addressUser(
+        context
+      )}, too few arguments`);
     }
     const number = BotBase.parseSpaceRange(args[1], this.all_places);
     if (typeof number === "string") {
-      return (msg += `Dear mod ${context["username"]}, I couldn't parse the outcome: ${number}!`);
+      return (msg += `Dear mod ${this.addressUser(
+        context
+      )}, I couldn't parse the outcome: ${number}!`);
     }
     if (number.length !== 1) {
-      return (msg += `Dear mod ${context["username"]}, I can only handle a single outcome`);
+      return (msg += `Dear mod ${this.addressUser(
+        context
+      )}, I can only handle a single outcome`);
     }
 
     this.prediction.winningNumber = number[0];

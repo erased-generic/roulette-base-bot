@@ -107,7 +107,7 @@ class BalanceBot
     if (info.reservedBalance > 0) {
       msg += ` (currently betted ${info.reservedBalance} of those)`;
     }
-    return msg + `, ${context["username"]}!`;
+    return msg + `, ${this.addressUser(context)}!`;
   }
 
   budgetHandler(context: HandlerContext, args: string[]): string | undefined {
@@ -134,9 +134,9 @@ class BalanceBot
     if (lastClaim !== undefined) {
       const elapsed = now - lastClaim.valueOf();
       if (elapsed < claimCooldown) {
-        return `You are on cooldown, ${
-          context["username"]
-        }! Please wait for ${formatTime(claimCooldown - elapsed)}`;
+        return `You are on cooldown, ${this.addressUser(
+          context
+        )}! Please wait for ${formatTime(claimCooldown - elapsed)}`;
       }
     }
     let msg = ``;
@@ -167,7 +167,9 @@ class BalanceBot
     );
     return (
       msg +
-      ` You claimed ${delta} points and now have ${balance} points, ${context["username"]}!`
+      ` You claimed ${delta} points and now have ${balance} points, ${this.addressUser(
+        context
+      )}!`
     );
   }
 
@@ -187,7 +189,9 @@ class BalanceBot
     }
     const chance = parseFloat(args[1]);
     if (!isFinite(chance)) {
-      return `Parse error: ${args[1]}, try %{format}, ${context["username"]}!`;
+      return `Parse error: ${args[1]}, try %{format}, ${this.addressUser(
+        context
+      )}!`;
     }
     return this.doClaim(context, chance / 100);
   }
@@ -200,7 +204,9 @@ class BalanceBot
     if (args.length > 1) {
       boardSize = parseInt(args[1]);
       if (isNaN(boardSize)) {
-        return `Parse error: ${args[1]}, try %{format}, ${context["username"]}!`;
+        return `Parse error: ${args[1]}, try %{format}, ${this.addressUser(
+          context
+        )}!`;
       }
     }
     return (
@@ -208,11 +214,14 @@ class BalanceBot
       Object.entries(this.userData.getAll())
         .filter(([id, data]) => id !== this.botContext.botUsername)
         .map(([id, data]) => {
-          return { username: data.username, balance: data.balance };
+          return { userId: id, balance: data.balance };
         })
         .sort((a, b) => b.balance - a.balance)
         .slice(0, boardSize)
-        .map((a) => `${a.username} with ${a.balance} points`)
+        .map(
+          (a) =>
+            `${this.addressUser(context, a.userId)} with ${a.balance} points`
+        )
         .join(";\n") +
       "."
     );

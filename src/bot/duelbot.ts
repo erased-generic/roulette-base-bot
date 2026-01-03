@@ -604,7 +604,9 @@ class DuelBot extends BotBase implements Configurable {
       return this.printDuel(context, duel, true);
     } else if (duel?.lastResult !== undefined) {
       const duelImpl = this.duelImpls[duel.duelName];
-      let msg = `${context["username"]}, your last ${duelImpl.duelDescription} result was: `;
+      let msg = `${this.addressUser(context)}, your last ${
+        duelImpl.duelDescription
+      } result was: `;
       this.matchDuelResult(
         duel.lastResult,
         (winnerId: string, loserId: string) => {
