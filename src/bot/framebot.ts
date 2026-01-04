@@ -16,21 +16,19 @@ import {
   optionalValue,
 } from "../util/interfaces";
 import {
-  baseBotConfig,
   baseBotConfigU,
   baseUserData,
   BotBase,
-  BotBaseContext,
   PredefinedHandler,
 } from "./botbase";
 import * as fs from "fs";
 
 function frameBotConfig() {
   return baseBotConfigU(
-    baseBotConfig({
+    {
       filePath: noDefaultValue(String),
       overrides: optionalValue(String),
-    }),
+    },
     frameBotUserData()
   );
 }
@@ -162,10 +160,16 @@ class FrameBot
       end: info.customFrameEnd,
       price: info.customFramePrice,
     };
-    const ensured = this.ensureBalance(context, userId, frame.price.valueOf());
-    if (typeof ensured === "string") {
-      console.log(`* frame ${userId}: ${ensured}`);
-      return undefined;
+    if (frame.price.valueOf() > 0) {
+      const ensured = this.ensureBalance(
+        context,
+        userId,
+        frame.price.valueOf()
+      );
+      if (typeof ensured === "string") {
+        console.log(`* frame ${userId}: ${ensured}`);
+        return undefined;
+      }
     }
     console.log(
       `* frame ${userId}: ${frame.begin}${this.getUsername(context)}${

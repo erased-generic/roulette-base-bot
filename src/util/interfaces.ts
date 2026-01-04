@@ -149,7 +149,9 @@ class OptionalValue<T extends Object> extends TypedPredicatedValue<T> {
   }
 
   isValid(x: any): x is T | undefined {
-    return super.isValid(x) && (x === undefined || this.p(x));
+    return (
+      x === undefined || (super.isValid(x) && x !== undefined && this.p(x))
+    );
   }
 }
 
@@ -284,11 +286,13 @@ function isValidBySchema<T extends Schema>(
     const val = c[key];
     if (defaultVal instanceof PredicatedValue) {
       if (!defaultVal.isValid(val)) {
-        console.log(`* invalid ${(defaultVal as any)._brand} key ${key}`);
+        console.log(
+          `* invalid ${(defaultVal as any)._brand} key ${key}: ${val}`
+        );
         return false;
       }
     } else if (!isInstance(val, (defaultVal as any).constructor)) {
-      console.log(`* invalid key ${key}`);
+      console.log(`* invalid key ${key}: ${val}`);
       return false;
     }
   }

@@ -17,7 +17,6 @@ import {
   defaultValue,
 } from "../util/interfaces";
 import {
-  baseBotConfig,
   baseBotConfigU,
   baseUserData,
   BotBase,
@@ -35,7 +34,7 @@ function balanceBotUserData() {
 type BalanceUserDataSchema = ReturnType<typeof balanceBotUserData>;
 
 function balanceBotConfig() {
-  return baseBotConfigU(baseBotConfig({}), balanceBotUserData());
+  return baseBotConfigU({}, balanceBotUserData());
 }
 
 @ConfigName("BalanceBot", balanceBotConfig)

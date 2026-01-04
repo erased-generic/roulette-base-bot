@@ -36,6 +36,7 @@ import {
   MappedSchema,
   optionalValue,
   callHandler,
+  combineSchemas,
 } from "../util/interfaces";
 import { RouletteBase } from "../util/roulette";
 import Fraction from "fraction.js";
@@ -73,16 +74,18 @@ function baseBotConfigU<
   T extends Schema,
   U extends BaseUserDataSchema = BaseUserDataSchema
 >(configSchema: T, userDataSchema: U) {
-  return {
-    botContext: noDefaultValue(BotBaseContext),
-    userData: noDefaultValue(UserData<MappedSchema<U>>, (u) => {
-      return isValidBySchema(
-        u.withSchema(userDataSchema).getDefaultData(),
-        userDataSchema
-      );
-    }),
-    ...configSchema,
-  };
+  return combineSchemas(
+    {
+      botContext: noDefaultValue(BotBaseContext),
+      userData: noDefaultValue(UserData<MappedSchema<U>>, (u) => {
+        return isValidBySchema(
+          u.withSchema(userDataSchema).getDefaultData(),
+          userDataSchema
+        );
+      }),
+    },
+    configSchema
+  );
 }
 
 function baseBotConfig<T extends Schema>(configSchema: T) {
