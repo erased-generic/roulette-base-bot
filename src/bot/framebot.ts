@@ -1,4 +1,4 @@
-export { FrameBot };
+export { FrameBot, frameBotUserData };
 
 import {
   BotHandler,
@@ -37,7 +37,9 @@ function frameBotConfig() {
 
 function frameBotUserData() {
   return combineSchemas(baseUserData(), {
-    customFrameIdx: defaultValue(-1),
+    customFrameBegin: defaultValue(""),
+    customFrameEnd: defaultValue(""),
+    customFramePrice: defaultValue(0),
   });
 }
 
@@ -127,7 +129,9 @@ class FrameBot
     }
     if (frameIndex < 0) {
       this.userData.update(context["user-id"], (inPlaceValue) => {
-        inPlaceValue.customFrameIdx = -1;
+        inPlaceValue.customFrameBegin = "";
+        inPlaceValue.customFrameEnd = "";
+        inPlaceValue.customFramePrice = 0;
       });
       return `${this.addressUser(context)} reset to no custom frame for free!`;
     }
@@ -138,7 +142,9 @@ class FrameBot
       )}`;
     }
     this.userData.update(context["user-id"], (inPlaceValue) => {
-      inPlaceValue.customFrameIdx = frameIndex;
+      inPlaceValue.customFrameBegin = frame.begin.toString();
+      inPlaceValue.customFrameEnd = frame.end.toString();
+      inPlaceValue.customFramePrice = frame.price.valueOf();
     });
     return `${this.addressUser(
       context
@@ -150,11 +156,12 @@ class FrameBot
     args: { userId: String }
   ): string | undefined {
     const userId = args.userId.valueOf();
-    const frameIdx = this.userData.get(userId).customFrameIdx;
-    const frame = this.frames[frameIdx];
-    if (frame === undefined) {
-      return undefined;
-    }
+    const info = this.userData.get(userId);
+    const frame = {
+      begin: info.customFrameBegin,
+      end: info.customFrameEnd,
+      price: info.customFramePrice,
+    };
     const ensured = this.ensureBalance(context, userId, frame.price.valueOf());
     if (typeof ensured === "string") {
       console.log(`* frame ${userId}: ${ensured}`);

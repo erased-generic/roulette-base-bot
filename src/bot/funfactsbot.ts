@@ -49,7 +49,11 @@ class FunFactsBot extends BotBase implements Configurable {
     const userId = context["user-id"];
     const ensured = this.ensureBalance(context, userId, FunFactsBot.FACT_PRICE);
     if (typeof ensured === "string") {
-      return `Fun fact: ${ensured}`;
+      return `Fun fact: ${this.ensureBalanceErrorToString(
+        context,
+        userId,
+        ensured
+      )}`;
     }
     this.commitBalance(
       context,

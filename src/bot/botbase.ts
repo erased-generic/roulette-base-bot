@@ -113,6 +113,11 @@ const PredefinedHandlers = {
   [PredefinedHandler.AddressUser]: { userId: noDefaultValue(String) },
 };
 
+enum EnsureBalanceError {
+  IllegalAmount = "IllegalAmount",
+  NotEnoughBalance = "NotEnoughBalance",
+}
+
 abstract class BotBase<U extends BaseUserDataSchema = BaseUserDataSchema>
   implements Bot, Configurable
 {
@@ -276,23 +281,36 @@ abstract class BotBase<U extends BaseUserDataSchema = BaseUserDataSchema>
     userId: string,
     amount: number,
     extraReserveLimit?: number
-  ): number | string {
+  ): number | EnsureBalanceError {
     if (amount <= 0) {
-      return `You can bet only a positive amount of points, ${this.addressUser(
-        context,
-        userId
-      )}!`;
+      return EnsureBalanceError.IllegalAmount;
     }
     const balance = this.getBalance(context, userId) + (extraReserveLimit ?? 0);
     amount = isNaN(amount) ? balance : amount;
     if (!(amount <= balance)) {
-      return `You don't have that many points, ${this.addressUser(
-        context,
-        userId
-      )}!`;
+      return EnsureBalanceError.NotEnoughBalance;
     }
     this.reserveBalance(context, userId, amount - (extraReserveLimit ?? 0));
     return amount;
+  }
+
+  protected ensureBalanceErrorToString(
+    context: HandlerContext,
+    userId: string,
+    ensureBalanceError: EnsureBalanceError
+  ) {
+    switch (ensureBalanceError) {
+      case EnsureBalanceError.IllegalAmount:
+        return `You can bet only a positive amount of points, ${this.addressUser(
+          context,
+          userId
+        )}!`;
+      case EnsureBalanceError.NotEnoughBalance:
+        return `You don't have that many points, ${this.addressUser(
+          context,
+          userId
+        )}!`;
+    }
   }
 
   protected updateBalance(
@@ -361,7 +379,7 @@ abstract class BotBase<U extends BaseUserDataSchema = BaseUserDataSchema>
       rouletteBase.getBet(userId)
     );
     if (typeof ensured === "string") {
-      return ensured;
+      return this.ensureBalanceErrorToString(context, userId, ensured);
     }
     rouletteBase.placeBet(userId, ensured, numbers);
     return ensured;

@@ -1,0 +1,34 @@
+{
+  "frames": [
+    {
+      "begin": "[",
+      "end": "]",
+      "price": 1
+    },
+    {
+      "begin": "-=",
+      "end": "=-",
+      "price": 10
+    },
+    {
+      "begin": "«",
+      "end": "»",
+      "price": 10
+    },
+    {
+      "begin": "༺",
+      "end": "༻",
+      "price": 20
+    },
+    {
+      "begin": "꧁",
+      "end": "꧂",
+      "price": 20
+    },
+    {
+      "begin": "❀",
+      "end": "❀",
+      "price": 20
+    }
+  ]
+}

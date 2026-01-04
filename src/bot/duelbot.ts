@@ -303,7 +303,7 @@ class DuelBot extends BotBase implements Configurable {
       extraReserveLimit
     );
     if (typeof amount === "string") {
-      return amount;
+      return this.ensureBalanceErrorToString(context, userId1, amount);
     }
 
     const username2 = duelCommand.username;

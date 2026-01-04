@@ -117,7 +117,7 @@ class MiscBot extends BotBase implements Configurable {
     const userId = context["user-id"];
     const ensured = this.ensureBalance(context, userId, actionPayload.price);
     if (typeof ensured === "string") {
-      return ensured;
+      return this.ensureBalanceErrorToString(context, userId, ensured);
     }
     this.commitBalance(
       context,
