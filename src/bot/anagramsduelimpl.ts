@@ -10,6 +10,7 @@ import {
   GameResult,
   noDefaultValue,
   optionalValue,
+  defaultValue,
 } from "../util/interfaces";
 import { BotBase } from "./botbase";
 import { DuelBot, DuelAccepted, DuelImpl, DuelHandler } from "./duelbot";
@@ -18,10 +19,10 @@ import * as fs from "fs";
 function anagramsDuelImplConfig() {
   return {
     anagrams: noDefaultValue(String),
-    anagramsIsFile: true,
-    numToGuess: 5,
+    anagramsIsFile: defaultValue(true),
+    numToGuess: defaultValue(5),
     gameBrain: optionalValue(GameBrain<anagramsModule.Anagrams>),
-    randomizer: () => Math.random(),
+    randomizer: defaultValue(() => Math.random()),
   };
 }
 

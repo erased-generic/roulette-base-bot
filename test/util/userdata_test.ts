@@ -2,6 +2,7 @@ import assert from "assert";
 import { FileUserData } from "../../src/util/userdata";
 import path from "path";
 import * as fs from "fs";
+import { defaultValue } from "../../src/util/interfaces";
 
 const filePath = path.join(__dirname, "test.json");
 fs.writeFileSync(
@@ -10,8 +11,8 @@ fs.writeFileSync(
   "utf8"
 );
 const userData = new FileUserData(filePath).withSchema({
-  testPrev: "defaultValue",
-  test: 123,
+  testPrev: defaultValue("defaultValue"),
+  test: defaultValue(123),
 });
 assert.strictEqual(userData.get("userId").test, 123);
 assert.strictEqual(userData.get("userId").testPrev, "prev");
@@ -23,7 +24,7 @@ assert.deepStrictEqual(JSON.parse(fs.readFileSync(filePath, "utf8")), {
   userId: { test: 456, testPrev: "prev" },
 });
 
-const userData2 = userData.withSchema({ test2: 789 });
+const userData2 = userData.withSchema({ test2: defaultValue(789) });
 assert.strictEqual(userData.get("userId").test, 456);
 assert.strictEqual(userData.get("userId")["test2"], 789);
 assert.strictEqual(userData2.get("userId")["test"], 456);

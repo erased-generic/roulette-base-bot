@@ -8,16 +8,19 @@ import {
   GameBrain,
   GameResult,
   HandlerContext,
+  defaultValue,
 } from "../util/interfaces";
 import { BotBase } from "./botbase";
 import { DuelBot, DuelAccepted, DuelImpl } from "./duelbot";
 
 function blackJackDuelImplConfig() {
   return {
-    deckGenerator: BlackJackDuelImpl.shuffledDeckGenerator,
-    gameBrain: new blackjackModule.BlackJackBrain(
-      0.1
-    ) as GameBrain<blackjackModule.BlackJack>,
+    deckGenerator: defaultValue(BlackJackDuelImpl.shuffledDeckGenerator),
+    gameBrain: defaultValue(
+      new blackjackModule.BlackJackBrain(
+        0.1
+      ) as GameBrain<blackjackModule.BlackJack>
+    ),
   };
 }
 

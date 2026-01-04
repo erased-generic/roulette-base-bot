@@ -14,6 +14,7 @@ import {
   formatTime,
   combineSchemas,
   optionalValue,
+  defaultValue,
 } from "../util/interfaces";
 import {
   baseBotConfig,
@@ -25,8 +26,8 @@ import {
 
 function balanceBotUserData() {
   return combineSchemas(baseUserData(), {
-    balance: 100,
-    reservedBalance: 0,
+    balance: defaultValue(100),
+    reservedBalance: defaultValue(0),
     lastClaim: optionalValue(Number),
   });
 }
@@ -101,13 +102,14 @@ class BalanceBot
   pointsHandler(context: HandlerContext, args: string[]): string | undefined {
     // Print the user's points
     const userId = context["user-id"];
-    const info = this.userData.get(userId);
+    const address = `, ${this.addressUser(context)}!`;
 
+    const info = this.userData.get(userId);
     let msg = `You have ${info.balance} points`;
     if (info.reservedBalance > 0) {
       msg += ` (currently betted ${info.reservedBalance} of those)`;
     }
-    return msg + `, ${this.addressUser(context)}!`;
+    return msg + address;
   }
 
   budgetHandler(context: HandlerContext, args: string[]): string | undefined {

@@ -8,6 +8,7 @@ import {
   noDefaultValue,
   RejectingBrain,
   HandlerContext,
+  defaultValue,
 } from "../util/interfaces";
 import { BotBase } from "./botbase";
 import { DuelBot, DuelAccepted, DuelImpl, DuelHandler } from "./duelbot";
@@ -25,9 +26,11 @@ function wordleDuelImplConfig() {
   return {
     validWordleTargets: noDefaultValue(String),
     validWordleGuesses: noDefaultValue(String),
-    validWordleDataIsFile: true,
-    gameBrain: new DoNothingBrain(0.1) as GameBrain<wordleModule.Wordle>,
-    randomizer: () => Math.random(),
+    validWordleDataIsFile: defaultValue(true),
+    gameBrain: defaultValue(
+      new DoNothingBrain(0.1) as GameBrain<wordleModule.Wordle>
+    ),
+    randomizer: defaultValue(() => Math.random()),
   };
 }
 

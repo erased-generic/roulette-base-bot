@@ -5,6 +5,7 @@ import * as path from "path";
 import {
   applySchema,
   combineSchemas,
+  isValidBySchema,
   MappedSchema,
   Schema,
 } from "./interfaces";
@@ -24,7 +25,14 @@ abstract class UserData<T> {
     const self = this as UserData<MappedSchema<U>>;
     const userData = self.userData;
     for (const key in userData) {
-      userData[key] = applySchema(userData[key], schema);
+      const withSchema = applySchema(userData[key], schema);
+      if (isValidBySchema(withSchema, schema)) {
+        userData[key] = withSchema;
+      } else {
+        console.log(
+          `* invalid userData: ${key}: ${JSON.stringify(withSchema)}`
+        );
+      }
     }
     return self;
   }

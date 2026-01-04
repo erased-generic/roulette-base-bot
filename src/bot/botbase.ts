@@ -249,7 +249,8 @@ abstract class BotBase<U extends BaseUserDataSchema = BaseUserDataSchema>
     });
   }
 
-  public getUsername(context: HandlerContext, userId: string) {
+  public getUsername(context: HandlerContext, userId?: string) {
+    userId = userId ?? context["user-id"];
     return this.getUserData().get(userId).username?.toString();
   }
 

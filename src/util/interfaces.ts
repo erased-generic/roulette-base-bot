@@ -20,11 +20,16 @@ export {
   RejectingBrain,
   Schema,
   PredicatedValue,
-  predicatedValue,
-  noDefaultValue,
+  DefaultValue,
+  defaultValue,
   NoDefaultValue,
-  optionalValue,
+  noDefaultValue,
   OptionalValue,
+  optionalValue,
+  ListValue,
+  listValue,
+  SchemaValue,
+  schemaValue,
   MappedSchemaElement,
   MappedSchema,
   MappedSchemaFromGet,
@@ -38,68 +43,141 @@ export {
 
 type Schema = { [key: string]: any };
 
-function isInstance(obj: any, c: abstract new (...args: any[]) => any) {
+function isInstance<T>(
+  obj: unknown,
+  c: abstract new (...args: any[]) => T
+): obj is T {
   return obj instanceof c || obj?.constructor === c;
 }
 
-class PredicatedValue<T extends Object> {
-  constructor(
-    private c: abstract new (...args: any[]) => T,
-    private p: (x: T) => boolean
-  ) {}
+abstract class PredicatedValue<T extends Object> {
+  constructor() {}
 
-  isValid(x: any) {
-    return isInstance(x, this.c) && this.p(x as T);
+  abstract isValid(x: unknown): x is T | undefined;
+
+  apply(x: unknown) {
+    return x;
   }
 
   combine<RT extends Object>(
     x: PredicatedValue<RT>
   ): PredicatedValue<T & RT> | undefined;
-  combine(x: any): PredicatedValue<Object> | undefined;
+  combine(x: unknown): PredicatedValue<Object> | undefined;
 
-  combine(x: any) {
+  combine(x: unknown) {
     if (x === undefined) {
       return this;
     }
     if (x instanceof PredicatedValue) {
-      return predicatedValue(
-        Object,
-        (y: any) => this.isValid(y) && x.isValid(y)
-      );
+      return new CombinedValue<Object>(Object, this, x);
     }
     return undefined;
   }
 }
 
-function predicatedValue<T extends Object>(
-  c: abstract new (...args: any[]) => T,
-  p: (x: T) => boolean
-): PredicatedValue<T> {
-  return new PredicatedValue<T>(c, p);
+class TypedPredicatedValue<T extends Object> extends PredicatedValue<T> {
+  constructor(private c: abstract new (...args: any[]) => T) {
+    super();
+  }
+
+  isValid(x: unknown): x is T | undefined {
+    return isInstance<T>(x, this.c);
+  }
 }
 
-class NoDefaultValue<T extends Object> extends PredicatedValue<T> {
+class CombinedValue<T extends Object> extends TypedPredicatedValue<T> {
+  readonly _brand = "Combined" as const;
+
+  constructor(
+    c: abstract new (...args: any[]) => T,
+    private p1: PredicatedValue<T>,
+    private p2: PredicatedValue<T>
+  ) {
+    super(c);
+  }
+
+  isValid(x: unknown) {
+    return super.isValid(x) && this.p1.isValid(x) && this.p2.isValid(x);
+  }
+
+  apply(x: unknown) {
+    x = this.p1.apply(x);
+    x = this.p2.apply(x);
+    return x;
+  }
+}
+
+class DefaultValue<T extends Object> extends TypedPredicatedValue<T> {
+  readonly _brand = "Default" as const;
+  readonly value: T;
+
+  constructor(value: T, private p: (x: T) => boolean = (x: T) => true) {
+    super(value.constructor as any);
+    this.value = value;
+  }
+
+  isValid(x: unknown): x is T {
+    return super.isValid(x) && x !== undefined && this.p(x);
+  }
+
+  apply(x: unknown) {
+    return x ?? this.value;
+  }
+}
+
+class NoDefaultValue<T extends Object> extends TypedPredicatedValue<T> {
   readonly _brand = "NoDefaultValue" as const;
   constructor(
     c: abstract new (...args: any[]) => T,
-    p: (x: T) => boolean = (x: any) => true
+    private p: (x: T) => boolean = (x: T) => true
   ) {
-    super(c, p);
+    super(c);
+  }
+
+  isValid(x: any): x is T {
+    return super.isValid(x) && x !== undefined && this.p(x);
   }
 }
 
-class OptionalValue<T extends Object> extends PredicatedValue<T> {
+class OptionalValue<T extends Object> extends TypedPredicatedValue<T> {
   readonly _brand = "Optional" as const;
   constructor(
     c: abstract new (...args: any[]) => T,
-    p: (x: T) => boolean = (x: any) => true
+    private p: (x: T) => boolean = (x: T) => true
   ) {
-    super(c, p);
+    super(c);
   }
 
-  isValid(x: any) {
-    return super.isValid(x) || x === undefined;
+  isValid(x: any): x is T | undefined {
+    return super.isValid(x) && (x === undefined || this.p(x));
   }
+}
+
+class ListValue<T extends Object> extends TypedPredicatedValue<
+  (T | undefined)[]
+> {
+  readonly _brand = "List" as const;
+
+  constructor(private elP: PredicatedValue<T>) {
+    super(Array);
+  }
+
+  isValid(x: any): x is (T | undefined)[] {
+    return (
+      super.isValid(x) && x !== undefined && x.every((y) => this.elP.isValid(y))
+    );
+  }
+
+  apply(x: any) {
+    if (Array.isArray(x)) {
+      return x.map(this.elP.apply.bind(this.elP));
+    }
+    return x;
+  }
+}
+
+function defaultValue<T extends Object>(value: T, p?: (x: T) => boolean) {
+  return new DefaultValue<T>(value, p);
 }
 
 function noDefaultValue<T extends Object>(
@@ -114,6 +192,10 @@ function optionalValue<T extends Object>(
   p?: (x: T) => boolean
 ) {
   return new OptionalValue<T>(c, p);
+}
+
+function listValue<T extends Object>(p: PredicatedValue<T>) {
+  return new ListValue<T>(p);
 }
 
 function combineValues<LT extends Object, RT extends Object>(
@@ -151,11 +233,18 @@ function combineSchemas<LT extends Schema, RT extends Schema>(
   return res as LT & RT;
 }
 
-type MappedSchemaElement<T> = T extends NoDefaultValue<infer U>
-  ? U
-  : T extends OptionalValue<infer U>
-  ? U | undefined
-  : T;
+type MappedSchemaElement<T> = //
+  T extends DefaultValue<infer U>
+    ? U
+    : T extends NoDefaultValue<infer U>
+    ? U
+    : T extends OptionalValue<infer U>
+    ? U | undefined
+    : T extends ListValue<infer U>
+    ? MappedSchemaElement<U>[]
+    : T extends SchemaValue<infer U>
+    ? MappedSchema<U>
+    : T;
 
 type MappedSchema<T extends Schema> = {
   [key in keyof T]: MappedSchemaElement<T[key]>;
@@ -167,13 +256,16 @@ type MappedSchemaFromGet<T> = T extends (...args: any[]) => infer U
     : never
   : never;
 
-function applySchema<T extends Schema>(c: any, schema: T): MappedSchema<T> {
-  return Object.entries({ ...schema, ...c })
-    .filter(([key, val]) => !(val instanceof PredicatedValue))
-    .reduce(
-      (acc, [key, val]) => ({ ...acc, [key]: val }),
-      {}
-    ) as MappedSchema<T>;
+function applySchema<T extends Schema>(c: any, schema: T) {
+  const res = { ...c };
+  for (const key in schema) {
+    const defaultVal: unknown = schema[key];
+    const val = res[key];
+    if (defaultVal instanceof PredicatedValue) {
+      res[key] = defaultVal.apply(val);
+    }
+  }
+  return res;
 }
 
 function isValidBySchema<T extends Schema>(
@@ -181,7 +273,7 @@ function isValidBySchema<T extends Schema>(
   schema: T
 ): c is MappedSchema<T> {
   for (const key in schema) {
-    const defaultVal: any = schema[key];
+    const defaultVal: unknown = schema[key];
     if (!(key in c)) {
       if (defaultVal instanceof OptionalValue) {
         continue;
@@ -190,17 +282,12 @@ function isValidBySchema<T extends Schema>(
       return false;
     }
     const val = c[key];
-    if (defaultVal instanceof NoDefaultValue) {
+    if (defaultVal instanceof PredicatedValue) {
       if (!defaultVal.isValid(val)) {
-        console.log(`* invalid nodefault key ${key}`);
+        console.log(`* invalid ${(defaultVal as any)._brand} key ${key}`);
         return false;
       }
-    } else if (defaultVal instanceof OptionalValue) {
-      if (!defaultVal.isValid(val)) {
-        console.log(`* invalid optional key ${key}`);
-        return false;
-      }
-    } else if (!isInstance(val, defaultVal.constructor)) {
+    } else if (!isInstance(val, (defaultVal as any).constructor)) {
       console.log(`* invalid key ${key}`);
       return false;
     }
@@ -208,22 +295,41 @@ function isValidBySchema<T extends Schema>(
   return true;
 }
 
+class SchemaValue<T extends Schema> extends PredicatedValue<MappedSchema<T>> {
+  readonly _brand = "Schema" as const;
+  constructor(private schema: T) {
+    super();
+  }
+
+  isValid(x: unknown): x is MappedSchema<T> {
+    return isValidBySchema(x, this.schema);
+  }
+
+  apply(x: unknown) {
+    return applySchema(x, this.schema);
+  }
+}
+
+function schemaValue<T extends Schema>(schema: T) {
+  return new SchemaValue<T>(schema);
+}
+
 interface Configurable {}
 
 class ConfigurableRegistry {
   private static registry = new Map<
     string,
-    (c: any) => Configurable | undefined
+    (c: unknown) => Configurable | undefined
   >();
   public static register(
     name: string,
-    ctor: (c: any) => Configurable | undefined
+    ctor: (c: unknown) => Configurable | undefined
   ) {
     this.registry.set(name, ctor);
   }
   public static get(
     name: string
-  ): ((c: any) => Configurable | undefined) | undefined {
+  ): ((c: unknown) => Configurable | undefined) | undefined {
     return ConfigurableRegistry.registry.get(name);
   }
 }
@@ -234,7 +340,7 @@ function ConfigName<ConfigT extends {}>(
 ) {
   return (constructor: new (c: MappedSchema<ConfigT>) => Configurable) => {
     constructor.prototype.name = name;
-    ConfigurableRegistry.register(name, (c: any) => {
+    ConfigurableRegistry.register(name, (c: unknown) => {
       const defaultC = configSchema();
       const cWithDefaults = applySchema(c, defaultC);
       if (!isValidBySchema(cWithDefaults, defaultC)) {

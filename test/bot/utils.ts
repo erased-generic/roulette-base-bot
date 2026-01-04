@@ -37,7 +37,7 @@ function testUserData() {
   return balanceBotUserData();
 }
 
-type TestUserDataSchema = MappedSchemaFromGet<typeof testUserData>;
+type TestUserData = MappedSchemaFromGet<typeof testUserData>;
 
 function createTestUserData() {
   return new MemoryUserData({}).withSchema(testUserData());
@@ -99,7 +99,7 @@ function instanceTestHandler(
 }
 
 function setBalance(
-  userData: UserData<MappedSchema<TestUserDataSchema>>,
+  userData: UserData<TestUserData>,
   userId: string,
   balance: number
 ) {
@@ -107,7 +107,7 @@ function setBalance(
 }
 
 function setBalanceNoReserved(
-  userData: UserData<MappedSchema<TestUserDataSchema>>,
+  userData: UserData<TestUserData>,
   userId: string,
   balance: number
 ) {

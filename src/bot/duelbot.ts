@@ -11,6 +11,7 @@ import {
   GameBrain,
   GameContext,
   GameResult,
+  defaultValue,
 } from "../util/interfaces";
 import { baseBotConfig, BotBase } from "./botbase";
 import Fraction from "fraction.js";
@@ -158,8 +159,8 @@ abstract class DuelImpl<T extends Game> implements Configurable {
 
 function duelBotConfig() {
   return baseBotConfig({
-    playerShuffleChance: 0.5,
-    duelImpls: {} as { [key: string]: DuelImpl<any> },
+    playerShuffleChance: defaultValue(0.5),
+    duelImpls: defaultValue({} as { [key: string]: DuelImpl<any> }),
   });
 }
 
