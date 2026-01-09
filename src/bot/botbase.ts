@@ -247,8 +247,6 @@ abstract class BotBase<U extends BaseUserDataSchema = BaseUserDataSchema>
       this.getUsername(context, user) ??
       user
     );
-    // TODO: replace all addressing to users with this method
-    // TODO: think about moving balance handling to a separate bot as well
   }
 
   updateUsername(context: HandlerContext) {
