@@ -156,6 +156,7 @@ class BalanceBot
     }
     this.userData.update(userId, (inPlaceValue, hadKey) => {
       inPlaceValue.lastClaim = now;
+      inPlaceValue.balance += delta;
     });
     if (delta < claimSize) {
       msg = "Unlucky! " + msg;

@@ -25,6 +25,7 @@ testHandler(testChatContext, "!budget", /casino has 200 points/);
 
 // test claims
 testHandler(testChatContext, "!claime", /claimed 100 points/);
+testHandler(testChatContext, "!balance", /You have 200 points/);
 // assume that 30 minutes do not pass between these statements
 testHandler(testChatContext, "!claime", /on cooldown/);
 for (let i = 0; i < 10; i++) {
