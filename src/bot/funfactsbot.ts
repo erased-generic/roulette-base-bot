@@ -21,6 +21,7 @@ function funFactsBotConfig() {
 class FunFactsBot extends BotBase implements Configurable {
   static readonly FACT_PRICE = 333;
   facts: string[];
+  weightSums: number[];
 
   readonly handlers: { [key: string]: BotHandler } = {
     fact: {
@@ -42,6 +43,11 @@ class FunFactsBot extends BotBase implements Configurable {
         throw e;
       }
     })();
+    let sum = 0;
+    this.weightSums = this.facts
+      .map((v: string, i: number) => 1 << i)
+      .map((v: number) => (sum += v))
+      .map((v: number) => v / sum);
   }
 
   factHandler(context: HandlerContext, args: string[]): string | undefined {
@@ -61,10 +67,12 @@ class FunFactsBot extends BotBase implements Configurable {
       FunFactsBot.FACT_PRICE,
       -FunFactsBot.FACT_PRICE
     );
+    const roll = Math.random();
+    let index = this.weightSums.findIndex((v: number, i: number) => roll <= v);
     console.log(`* funfact: ${userId}, ${context.username}`);
     if (this.facts.length > 0) {
       return `Fun fact: ${
-        this.facts[Math.floor(Math.random() * this.facts.length)]
+        this.facts[index === -1 ? this.facts.length - 1 : index]
       }`;
     }
     return `Fun fact: scammed!`;

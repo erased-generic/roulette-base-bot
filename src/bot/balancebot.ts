@@ -156,7 +156,6 @@ class BalanceBot
     }
     this.userData.update(userId, (inPlaceValue, hadKey) => {
       inPlaceValue.lastClaim = now;
-      balance = inPlaceValue.balance += delta;
     });
     if (delta < claimSize) {
       msg = "Unlucky! " + msg;
@@ -166,11 +165,13 @@ class BalanceBot
     console.log(
       `* claim: ${userId}, ${context.username}, ${delta}, ${trickery} <> ${chance}, ${trickery2}`
     );
+    const address = this.addressUser(context);
     return (
       msg +
-      ` You claimed ${delta} points and now have ${balance} points, ${this.addressUser(
-        context
-      )}!`
+      ` You claimed ${delta} points and now have ${this.getBalance(
+        context,
+        userId
+      )} points, ${address}!`
     );
   }
 
