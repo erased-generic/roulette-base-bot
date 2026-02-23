@@ -29,7 +29,7 @@ function frameBotConfig() {
       filePath: noDefaultValue(String),
       overrides: optionalValue(String),
     },
-    frameBotUserData()
+    frameBotUserData(),
   );
 }
 
@@ -61,18 +61,18 @@ class FrameBot
   readonly handlers: { [key: string]: BotHandler } = {
     frames: {
       action: this.framesHandler.bind(this),
-      description: `List all available frames for custom user addressing.`,
+      description: `List all available frames for custom user addressing`,
       format: "",
     },
     buyFrame: {
       action: this.buyFrameHandler.bind(this),
-      description: `Buy a frame for custom user addressing (index -1 means reset to no frame).`,
+      description: `Buy a frame for custom user addressing (index -1 means reset to no frame)`,
       format: `<frame index>`,
     },
     ...Object.fromEntries([
       BotBase.toHandler(
         PredefinedHandler.AddressUser,
-        this.addressUserImpl.bind(this)
+        this.addressUserImpl.bind(this),
       ),
     ]),
   };
@@ -114,7 +114,7 @@ class FrameBot
           (frame, i) =>
             `${i}: ${frame.begin}${this.getUsername(context)}${frame.end} (${
               frame.price
-            } points)`
+            } points)`,
         )
         .join(", ")
     );
@@ -136,7 +136,7 @@ class FrameBot
     const frame = this.frames[frameIndex];
     if (!frame) {
       return `There is no frame with index ${frameIndex}, ${this.addressUser(
-        context
+        context,
       )}`;
     }
     this.userData.update(context["user-id"], (inPlaceValue) => {
@@ -145,13 +145,13 @@ class FrameBot
       inPlaceValue.customFramePrice = frame.price.valueOf();
     });
     return `${this.addressUser(
-      context
+      context,
     )} subscribed to a frame ${frameIndex} for ${frame.price} points/print!`;
   }
 
   private addressUserImpl(
     context: HandlerContext,
-    args: { userId: String }
+    args: { userId: String },
   ): string | undefined {
     const userId = args.userId.valueOf();
     const info = this.userData.get(userId);
@@ -164,7 +164,7 @@ class FrameBot
       const ensured = this.ensureBalance(
         context,
         userId,
-        frame.price.valueOf()
+        frame.price.valueOf(),
       );
       if (typeof ensured === "string") {
         console.log(`* frame ${userId}: ${ensured}`);
@@ -174,13 +174,13 @@ class FrameBot
     console.log(
       `* frame ${userId}: ${frame.begin}${this.getUsername(context)}${
         frame.end
-      }`
+      }`,
     );
     this.commitBalance(
       context,
       userId,
       frame.price.valueOf(),
-      -frame.price.valueOf()
+      -frame.price.valueOf(),
     );
     return `${frame.begin}${this.getUsername(context)}${frame.end}`;
   }
