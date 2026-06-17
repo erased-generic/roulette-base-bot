@@ -9,8 +9,20 @@ import {
 import { BlackJackDuelImpl } from "../../src/bot/blackjackduelimpl";
 import { BlackJackBrain } from "../../src/util/blackjack";
 import { DuelBot } from "../../src/bot/duelbot";
+import { FrameBot, frameBotUserData } from "../../src/bot/framebot";
 
 const config = createTestBotConfig();
+const frameConfig = {
+  ...config,
+  userData: config.userData.withSchema(frameBotUserData()),
+  filePath: "",
+  overrides: JSON.stringify({
+    frames: [
+      { begin: "[", end: "]", price: 1 },
+      { begin: "-=", end: "=-", price: 35 },
+    ],
+  }),
+};
 let instance = createTestBot(
   [
     new RouletteBot(config),
@@ -28,8 +40,9 @@ let instance = createTestBot(
         }),
       },
     }),
+    new FrameBot(frameConfig),
   ],
-  config
+  config,
 );
 
 // Test the bot interactions
@@ -49,12 +62,12 @@ testHandler(aChatContext, "!bet 10 red", /placed a bet of 10 on red/);
 testHandler(
   aChatContext,
   "!balance",
-  /You have 100 points \(currently betted 10 of those\), a/
+  /You have 100 points \(currently betted 10 of those\), a/,
 );
 testHandler(
   modChatContext,
   "!open",
-  /An honorable mod has opened a prediction/
+  /An honorable mod has opened a prediction/,
 );
 testHandler(modChatContext, "!predict 50 0", /mod predicted 0 with 50 points/);
 testHandler(aChatContext, "!predict 100 1", /You don't have that many points/);
@@ -62,22 +75,22 @@ testHandler(aChatContext, "!predict 20 1", /a predicted 1 with 20 points/);
 testHandler(
   aChatContext,
   "!balance",
-  /You have 100 points \(currently betted 30 of those\), a/
+  /You have 100 points \(currently betted 30 of those\), a/,
 );
 testHandler(
   aChatContext,
   "!duel 10 mod",
-  /mod, reply with !accept \[a\] to accept the blackjack duel, if you're ready to bet 10 points!/
+  /mod, reply with !accept \[a\] to accept the blackjack duel, if you're ready to bet 10 points!/,
 );
 testHandler(
   aChatContext,
   "!duel all mod",
-  /mod, reply with !accept \[a\] to accept the blackjack duel, if you're ready to bet 70 points!/
+  /mod, reply with !accept \[a\] to accept the blackjack duel, if you're ready to bet 70 points!/,
 );
 testHandler(
   aChatContext,
   "!balance",
-  /You have 100 points \(currently betted 100 of those\), a/
+  /You have 100 points \(currently betted 100 of those\), a/,
 );
 testHandler(
   modChatContext,
@@ -85,16 +98,16 @@ testHandler(
   new RegExp(
     "Closing the prediction\\. Prediction resulted in outcome '1', " +
       "mod lost 50 points \\(coef 0\\.4x\\) and now has 50 points, " +
-      "a won 50 points \\(coef 2\\.5x\\) and now has 150 points"
-  )
+      "a won 50 points \\(coef 2\\.5x\\) and now has 150 points",
+  ),
 );
 testHandler(
   aChatContext,
   "!balance",
-  /You have 150 points \(currently betted 80 of those\), a/
+  /You have 150 points \(currently betted 80 of those\), a/,
 );
 testHandler(
   aChatContext,
   "!duel all mod",
-  /mod, reply with !accept \[a\] to accept the blackjack duel, if you're ready to bet 140 points!/
+  /mod, reply with !accept \[a\] to accept the blackjack duel, if you're ready to bet 140 points!/,
 );

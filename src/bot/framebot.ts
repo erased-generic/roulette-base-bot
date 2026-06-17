@@ -172,7 +172,7 @@ class FrameBot
       }
     }
     console.log(
-      `* frame ${userId}: ${frame.begin}${this.getUsername(context)}${
+      `* frame ${userId}: ${frame.begin}${this.getUsername(context, userId)}${
         frame.end
       }`,
     );
@@ -182,6 +182,6 @@ class FrameBot
       frame.price.valueOf(),
       -frame.price.valueOf(),
     );
-    return `${frame.begin}${this.getUsername(context)}${frame.end}`;
+    return `${frame.begin}${this.getUsername(context, userId)}${frame.end}`;
   }
 }
